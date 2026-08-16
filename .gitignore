@@ -44,19 +44,19 @@ application-local.yml
 application-local.yaml
 
 # =========================
-# Angular / Web
+# Angular / Frontend
 # =========================
 
-/web/node_modules/
-/web/dist/
-/web/.angular/
-/web/.cache/
-/web/coverage/
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.angular/
+/frontend/.cache/
+/frontend/coverage/
 
 # Frontend environment files
-/web/.env
-/web/.env.*
-!/web/.env.example
+/frontend/.env
+/frontend/.env.*
+!/frontend/.env.example
 
 # =========================
 # Test / coverage reports
