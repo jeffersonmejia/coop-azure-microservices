@@ -1,0 +1,84 @@
+# =========================
+# Spring Boot / Java
+# =========================
+
+# Maven
+**/target/
+
+# Gradle
+**/.gradle/
+**/build/
+
+# Compiled Java files
+*.class
+
+# Logs
+*.log
+**/logs/
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+# =========================
+# IDEs / Editors
+# =========================
+
+**/.vscode/
+**/.idea/
+*.iml
+
+# =========================
+# Local / private files
+# =========================
+
+.local/
+
+.env
+.env.*
+!.env.example
+
+# Local Spring configuration
+application-local.properties
+application-local.yml
+application-local.yaml
+
+# =========================
+# Angular / Web
+# =========================
+
+/web/node_modules/
+/web/dist/
+/web/.angular/
+/web/.cache/
+/web/coverage/
+
+# Frontend environment files
+/web/.env
+/web/.env.*
+!/web/.env.example
+
+# =========================
+# Test / coverage reports
+# =========================
+
+**/coverage/
+**/jacoco.exec
+**/site/
+
+# =========================
+# Temporary files
+# =========================
+
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+
+# =========================
+# OS files
+# =========================
+
+.DS_Store
+Thumbs.db
