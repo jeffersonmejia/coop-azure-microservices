@@ -19,7 +19,7 @@ class DebitContractTest {
 
     @Test
     void test_debit_response_success_structure() {
-        DebitResponse response = DebitResponse.success(42L);
+        DebitResponse response = DebitResponse.ok(42L);
 
         assertThat(response.success()).isTrue();
         assertThat(response.transactionId()).isEqualTo(42L);
@@ -37,7 +37,7 @@ class DebitContractTest {
 
     @Test
     void test_debit_response_json_format() {
-        DebitResponse successResponse = DebitResponse.success(1L);
+        DebitResponse successResponse = DebitResponse.ok(1L);
         DebitResponse failureResponse = DebitResponse.failure("error");
 
         assertThat(successResponse).hasFieldOrProperty("success");
