@@ -2,12 +2,7 @@ param location string
 param environmentName string
 param projectName string
 param tags object
-
-@secure()
-param postgresAdminLogin string
-
-@secure()
-param postgresAdminPassword string
+param dbConnectionString string
 
 var acrName = 'acr${projectName}${environmentName}'
 
@@ -17,18 +12,6 @@ module acr 'modules/acr.bicep' = {
     location: location
     acrName: acrName
     tags: tags
-  }
-}
-
-module postgres 'modules/postgres.bicep' = {
-  name: 'deploy-postgres'
-  params: {
-    location: location
-    projectName: projectName
-    environmentName: environmentName
-    tags: tags
-    administratorLogin: postgresAdminLogin
-    administratorLoginPassword: postgresAdminPassword
   }
 }
 
@@ -95,10 +78,10 @@ module authApp 'modules/auth-container-app.bicep' = {
     acrManagedIdentityId: identities.outputs.acrPullIdentityId
     serverPort: 8081
     jwtSecret: keyVault.outputs.jwtSecretUri
-    dbConnectionString: postgres.outputs.connectionString
+    dbConnectionString: dbConnectionString
     tags: tags
   }
-  dependsOn: [containerAppEnvironment, acr, identities, keyVault, postgres]
+  dependsOn: [containerAppEnvironment, acr, identities, keyVault]
 }
 
 module accountApp 'modules/account-container-app.bicep' = {
@@ -111,10 +94,10 @@ module accountApp 'modules/account-container-app.bicep' = {
     acrManagedIdentityId: identities.outputs.acrPullIdentityId
     serverPort: 8082
     jwtSecret: keyVault.outputs.jwtSecretUri
-    dbConnectionString: postgres.outputs.connectionString
+    dbConnectionString: dbConnectionString
     tags: tags
   }
-  dependsOn: [containerAppEnvironment, acr, identities, keyVault, postgres]
+  dependsOn: [containerAppEnvironment, acr, identities, keyVault]
 }
 
 module paymentApp 'modules/payment-container-app.bicep' = {
@@ -127,14 +110,15 @@ module paymentApp 'modules/payment-container-app.bicep' = {
     acrManagedIdentityId: identities.outputs.acrPullIdentityId
     serverPort: 8083
     jwtSecret: keyVault.outputs.jwtSecretUri
-    dbConnectionString: postgres.outputs.connectionString
+    dbConnectionString: dbConnectionString
     accountServiceUrl: 'http://${accountApp.outputs.fqdn}'
     tags: tags
   }
-  dependsOn: [containerAppEnvironment, acr, identities, keyVault, postgres, accountApp]
+  dependsOn: [containerAppEnvironment, acr, identities, keyVault, accountApp]
 }
 
 output frontendUrl string = frontendApp.outputs.fqdn
 output authUrl string = authApp.outputs.fqdn
 output accountUrl string = accountApp.outputs.fqdn
 output paymentUrl string = paymentApp.outputs.fqdn
+output acrLoginServer string = acr.outputs.loginServer

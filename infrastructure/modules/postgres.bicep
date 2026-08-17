@@ -3,6 +3,12 @@ param projectName string
 param environmentName string
 param tags object
 
+@secure()
+param administratorLogin string
+
+@secure()
+param administratorLoginPassword string
+
 var serverName = 'psql-${projectName}-${environmentName}'
 var dbName = 'coop'
 
@@ -15,7 +21,9 @@ resource flexibleServer 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' =
     tier: 'Burstable'
   }
   properties: {
-    version: '14'
+    administratorLogin: administratorLogin
+    administratorLoginPassword: administratorLoginPassword
+    version: '17'
     storage: {
       storageSizeGB: 32
     }
@@ -26,7 +34,7 @@ resource flexibleServer 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' =
     highAvailability: {
       mode: 'Disabled'
     }
-    auth: {
+    authConfig: {
       passwordAuth: 'Enabled'
       activeDirectoryAuth: 'Disabled'
     }

@@ -41,6 +41,16 @@ resource containerApp 'Microsoft.App/containerApps@2025-01-01' = {
           identity: acrManagedIdentityId
         }
       ]
+      secrets: [
+        {
+          name: 'jwt-secret'
+          keyVaultUrl: jwtSecret
+        }
+        {
+          name: 'db-password'
+          value: 'coop'
+        }
+      ]
     }
     template: {
       containers: [
@@ -77,16 +87,6 @@ resource containerApp 'Microsoft.App/containerApps@2025-01-01' = {
             cpu: '0.25'
             memory: '0.5Gi'
           }
-        }
-      ]
-      secrets: [
-        {
-          name: 'jwt-secret'
-          keyVaultUrl: jwtSecret
-        }
-        {
-          name: 'db-password'
-          value: 'coop'
         }
       ]
       scale: {
