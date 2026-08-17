@@ -1,7 +1,7 @@
 param location string
 param projectName string
 param environmentName string
-param object tags
+param tags object
 
 var serverName = 'psql-${projectName}-${environmentName}'
 var dbName = 'coop'
@@ -15,7 +15,7 @@ resource flexibleServer 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' =
     tier: 'Burstable'
   }
   properties: {
-    version: '16'
+    version: '14'
     storage: {
       storageSizeGB: 32
     }
@@ -39,5 +39,5 @@ resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-0
 }
 
 output serverName string = flexibleServer.name
-output connectionString string = 'jdbc:postgresql://${flexibleServer.properties.fullyQualifiedAdministratorLogin}@${serverName}.postgres.database.azure.com:5432/${dbName}?sslmode=require'
+output connectionString string = 'jdbc:postgresql://${flexibleServer.name}.postgres.database.azure.com:5432/${dbName}?sslmode=require'
 output id string = flexibleServer.id
