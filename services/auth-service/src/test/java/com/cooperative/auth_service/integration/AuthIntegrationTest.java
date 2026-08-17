@@ -3,18 +3,15 @@ package com.cooperative.auth_service.integration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -36,7 +33,7 @@ class AuthIntegrationTest {
     }
 
     @Autowired
-    private TestRestTemplate restTemplate;
+    private WebTestClient webTestClient;
 
     @Test
     void test_register_and_login_flow() {
@@ -46,18 +43,21 @@ class AuthIntegrationTest {
                 "firstName", "John",
                 "lastName", "Doe");
 
-        ResponseEntity<Void> registerResponse = restTemplate.postForEntity(
-                "/api/auth/register", registerBody, Void.class);
-        assertThat(registerResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        webTestClient.post().uri("/api/auth/register")
+                .bodyValue(registerBody)
+                .exchange()
+                .expectStatus().isOk();
 
         Map<String, String> loginBody = Map.of(
                 "email", "newuser@test.com",
                 "password", "password123");
 
-        ResponseEntity<Map> loginResponse = restTemplate.postForEntity(
-                "/api/auth/login", loginBody, Map.class);
-        assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(loginResponse.getBody()).containsKey("accessToken");
+        webTestClient.post().uri("/api/auth/login")
+                .bodyValue(loginBody)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.accessToken").isNotEmpty();
     }
 
     @Test
@@ -68,18 +68,22 @@ class AuthIntegrationTest {
                 "firstName", "John",
                 "lastName", "Doe");
 
-        restTemplate.postForEntity("/api/auth/register", body, Void.class);
+        webTestClient.post().uri("/api/auth/register")
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isOk();
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(
-                "/api/auth/register", body, Map.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        webTestClient.post().uri("/api/auth/register")
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
     }
 
     @Test
     void test_me_without_token_returns_401() {
-        ResponseEntity<Void> response = restTemplate.getForEntity(
-                "/api/auth/me", Void.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        webTestClient.get().uri("/api/auth/me")
+                .exchange()
+                .expectStatus().isUnauthorized();
     }
 
     @Test
@@ -89,22 +93,28 @@ class AuthIntegrationTest {
                 "password", "password123",
                 "firstName", "Jane",
                 "lastName", "Smith");
-        restTemplate.postForEntity("/api/auth/register", registerBody, Void.class);
+        webTestClient.post().uri("/api/auth/register")
+                .bodyValue(registerBody)
+                .exchange()
+                .expectStatus().isOk();
 
         Map<String, String> loginBody = Map.of(
                 "email", "metest@test.com",
                 "password", "password123");
-        ResponseEntity<Map> loginResponse = restTemplate.postForEntity(
-                "/api/auth/login", loginBody, Map.class);
-        String token = (String) loginResponse.getBody().get("accessToken");
 
-        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
-        headers.setBearerAuth(token);
-        org.springframework.http.HttpEntity<Void> entity = new org.springframework.HttpEntity<>(headers);
+        String[] tokenHolder = new String[1];
+        webTestClient.post().uri("/api/auth/login")
+                .bodyValue(loginBody)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.accessToken").value(v -> tokenHolder[0] = (String) v);
 
-        ResponseEntity<Map> meResponse = restTemplate.exchange(
-                "/api/auth/me", org.springframework.http.HttpMethod.GET, entity, Map.class);
-        assertThat(meResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(meResponse.getBody().get("email")).isEqualTo("metest@test.com");
+        webTestClient.get().uri("/api/auth/me")
+                .header("Authorization", "Bearer " + tokenHolder[0])
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.email").isEqualTo("metest@test.com");
     }
 }

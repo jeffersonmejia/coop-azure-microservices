@@ -50,7 +50,7 @@ class AccountIntegrationTest {
 
         org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
         headers.setBearerAuth(token);
-        org.springframework.http.HttpEntity<Void> entity = new org.springframework.HttpEntity<>(headers);
+        org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
 
         ResponseEntity<Object[]> response = restTemplate.exchange(
                 "/api/accounts/me", org.springframework.http.HttpMethod.GET, entity, Object[].class);

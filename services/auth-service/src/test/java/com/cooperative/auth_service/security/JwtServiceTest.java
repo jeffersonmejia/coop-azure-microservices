@@ -31,8 +31,8 @@ class JwtServiceTest {
         var jwt = jwtDecoder.decode(token);
 
         assertThat(jwt.getSubject()).isEqualTo("test@test.com");
-        assertThat(jwt.getClaim("uid")).isEqualTo(42);
-        assertThat(jwt.getClaim("role")).isEqualTo("USER");
+        assertThat((Object) jwt.getClaim("uid")).isEqualTo(42);
+        assertThat((Object) jwt.getClaim("role")).isEqualTo("USER");
         assertThat(jwt.getIssuer().toString()).isEqualTo("auth-service");
     }
 

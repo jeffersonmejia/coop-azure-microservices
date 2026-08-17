@@ -12,9 +12,15 @@ services:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U coop -d coop"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+    restart: unless-stopped
 
   auth-service:
     build: ./services/auth-service
@@ -25,11 +31,18 @@ services:
       SPRING_DATASOURCE_USERNAME: coop
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-coop}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-before-production}
+      JAVA_OPTS: "-Xms128m -Xmx256m -XX:+UseG1GC -XX:MaxGCPauseMillis=50"
     ports:
       - "8081:8081"
     depends_on:
       postgres:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 320M
+          cpus: "0.5"
+    restart: unless-stopped
 
   account-service:
     build: ./services/account-service
@@ -40,11 +53,18 @@ services:
       SPRING_DATASOURCE_USERNAME: coop
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-coop}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-before-production}
+      JAVA_OPTS: "-Xms128m -Xmx256m -XX:+UseG1GC -XX:MaxGCPauseMillis=50"
     ports:
       - "8082:8082"
     depends_on:
       postgres:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 320M
+          cpus: "0.5"
+    restart: unless-stopped
 
   payment-service:
     build: ./services/payment-service
@@ -56,6 +76,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-coop}
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me-before-production}
       ACCOUNT_SERVICE_URL: http://account-service:8082
+      JAVA_OPTS: "-Xms128m -Xmx256m -XX:+UseG1GC -XX:MaxGCPauseMillis=50"
     ports:
       - "8083:8083"
     depends_on:
@@ -63,6 +84,12 @@ services:
         condition: service_healthy
       account-service:
         condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 320M
+          cpus: "0.5"
+    restart: unless-stopped
 
   frontend:
     build: ./frontend
@@ -78,6 +105,12 @@ services:
       - auth-service
       - account-service
       - payment-service
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+    restart: unless-stopped
 
 volumes:
   postgres-data:
