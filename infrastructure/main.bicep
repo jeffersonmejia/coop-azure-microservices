@@ -59,7 +59,6 @@ module containerAppEnvironment 'modules/container-app-environment.bicep' = {
     location: location
     projectName: projectName
     environmentName: environmentName
-    logAnalyticsWorkspaceId: monitoring.outputs.workspaceId
     tags: tags
   }
 }
@@ -72,7 +71,7 @@ module frontendApp 'modules/frontend-container-app.bicep' = {
     projectName: projectName
     acrLoginServer: acr.outputs.loginServer
     acrManagedIdentityId: identities.outputs.acrPullIdentityId
-    frontendPort: 4200
+    targetPort: 4200
     tags: tags
   }
   dependsOn: [containerAppEnvironment, acr, identities]

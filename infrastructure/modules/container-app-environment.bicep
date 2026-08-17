@@ -1,23 +1,15 @@
 param location string
 param projectName string
 param environmentName string
-param logAnalyticsWorkspaceId string
 param tags object
 
 var environmentNameVar = 'cae-${projectName}-${environmentName}'
 
-resource environment 'Microsoft.App/managedEnvironments@2024-10-02-preview' = {
+resource environment 'Microsoft.App/managedEnvironments@2025-01-01' = {
   name: environmentNameVar
   location: location
   tags: tags
-  properties: {
-    appLogsConfiguration: {
-      destination: 'log-analytics'
-      logAnalyticsConfiguration: {
-        customerId: logAnalyticsWorkspaceId
-      }
-    }
-  }
+  properties: {}
 }
 
 output environmentId string = environment.id

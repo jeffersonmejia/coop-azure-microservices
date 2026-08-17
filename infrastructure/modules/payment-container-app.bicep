@@ -1,13 +1,13 @@
 param location string
 param projectName string
 param environmentName string
-param int serverPort = 8083
-param string acrLoginServer string
-param string acrManagedIdentityId string
-param string jwtSecret string
-param string dbConnectionString string
-param string accountServiceUrl
-param object tags
+param serverPort int = 8083
+param acrLoginServer string
+param acrManagedIdentityId string
+param jwtSecret string
+param dbConnectionString string
+param accountServiceUrl string
+param tags object
 
 var appName = 'ca-${projectName}-${environmentName}-payment'
 var environmentNameVar = 'cae-${projectName}-${environmentName}'
@@ -17,7 +17,7 @@ resource managedEnvironment 'Microsoft.App/managedEnvironments@2024-10-02-previe
   name: environmentNameVar
 }
 
-resource containerApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
+resource containerApp 'Microsoft.App/containerApps@2025-01-01' = {
   name: appName
   location: location
   tags: tags
