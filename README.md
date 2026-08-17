@@ -24,6 +24,7 @@ Aplicación financiera cooperativa construida con Angular, microservicios Spring
 16. [Azure Deployment](#16-azure-deployment)
 17. [Project Status](#17-project-status)
 18. [Dataset](#18-dataset)
+19. [Hallazgos](#19-hallazgos)
 
 ---
 
@@ -487,3 +488,29 @@ Este proyecto utiliza el dataset financiero Berka/PKDD'99 para testing y demostr
 **Uso:** Importar vía `./scripts/data/import-berka.sh` — no se carga automáticamente.
 
 Ver [scripts/data/README.md](scripts/data/README.md) para detalles.
+
+---
+
+## 19. Hallazgos
+
+### Spring Boot 4.1.0 - Cambios de compatibilidad
+
+Durante la ejecucion local se encontraron errores de compilacion por cambios de paquetes en Spring Boot 4.1.0:
+
+- `TestRestTemplate` se movio de `org.springframework.boot.test.web.client` a `org.springframework.boot.resttestclient`
+- `HealthIndicator` y `Health` se movieron de `org.springframework.boot.actuate.health` a `org.springframework.boot.health.contributor`
+- Los records de Java 21 no permiten metodos estaticos con el mismo nombre que un componente del record
+
+Estos cambios fueron corregidos en account-service y payment-service.
+
+### Estrategia de ejecucion recomendada
+
+El orden correcto para validar el sistema es:
+
+1. **Local individual** — Ejecutar cada servicio por separado con `mvn spring-boot:run` para detectar errores de compilacion o configuracion antes de introducir complejidad de contenedores
+2. **Docker Compose** — Levantar el stack completo para validar la comunicacion entre servicios, health checks y dependencias
+3. **Nube** — Desplegar en Azure Container Apps una vez que el stack local funcione correctamente
+
+### Spring Native - Estado de la infraestructura
+
+Los modulos Bicep de Container Apps estan preparados para imagenes nativas. No contienen variables JVM especificas. El ajuste necesario es reducir la memoria asignada de `0.5Gi` a `0.128Gi` por servicio, ya que las imagenes nativas usan aproximadamente 50MB en vez de 300MB. Los Dockerfiles deben modificarse para usar `ghcr.io/graalvm/native-image` en el build y una imagen minima en runtime.
