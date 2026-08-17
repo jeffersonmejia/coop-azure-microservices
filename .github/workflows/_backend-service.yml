@@ -35,6 +35,8 @@ on:
         required: true
       AZURE_SUBSCRIPTION_ID:
         required: true
+      AZURE_DB_PASSWORD:
+        required: true
 
 env:
   AZURE_RESOURCE_GROUP: rg-coop-scus-dev
@@ -159,7 +161,7 @@ jobs:
                 "SERVER_PORT=${{ inputs.server-port }}" \
                 "SPRING_DATASOURCE_URL=jdbc:postgresql://psql-coop-dev.postgres.database.azure.com:5432/coop?sslmode=require" \
                 "SPRING_DATASOURCE_USERNAME=coopadmin" \
-                "SPRING_DATASOURCE_PASSWORD=C00pDb2024!" \
+                "SPRING_DATASOURCE_PASSWORD=${{ secrets.AZURE_DB_PASSWORD }}" \
                 "JWT_SECRET=dev-jwt-secret-change-in-prod"
           fi
 
@@ -196,12 +198,45 @@ jobs:
       run:
         working-directory: ${{ inputs.service-path }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          version: '25.0'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache: 'maven'
+
+      - name: Build native image
+        run: ./mvnw -Pnative native:compile -DskipTests -B
+
+      - name: Build Docker image
+        run: |
+          cp target/${{ inputs.service-name }} ./${{ inputs.service-name }}-native
+          IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}"
+          docker build -f Dockerfile.native \
+            --build-arg SERVICE_NAME=${{ inputs.service-name }}-native \
+            -t "${IMAGE}:${{ github.sha }}" \
+            -t "${IMAGE}:production" \
+            .
+
       - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ env.AZURE_ACR_NAME }}
+
+      - name: Push Docker image
+        run: |
+          IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}"
+          docker push "${IMAGE}:${{ github.sha }}"
+          docker push "${IMAGE}:production"
 
       - name: Deploy to Container Apps - Production
         run: |
@@ -233,7 +268,7 @@ jobs:
                 "SERVER_PORT=${{ inputs.server-port }}" \
                 "SPRING_DATASOURCE_URL=jdbc:postgresql://psql-coop-dev.postgres.database.azure.com:5432/coop?sslmode=require" \
                 "SPRING_DATASOURCE_USERNAME=coopadmin" \
-                "SPRING_DATASOURCE_PASSWORD=C00pDb2024!" \
+                "SPRING_DATASOURCE_PASSWORD=${{ secrets.AZURE_DB_PASSWORD }}" \
                 "JWT_SECRET=dev-jwt-secret-change-in-prod"
           fi
 
