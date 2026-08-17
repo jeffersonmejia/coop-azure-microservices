@@ -44,7 +44,7 @@ resource containerApp 'Microsoft.App/containerApps@2025-01-01' = {
       secrets: [
         {
           name: 'jwt-secret'
-          keyVaultUrl: jwtSecret
+          value: 'dev-jwt-secret-change-in-prod'
         }
         {
           name: 'db-password'

@@ -37,7 +37,7 @@ on:
         required: true
 
 env:
-  AZURE_RESOURCE_GROUP: rg-coop-dev
+  AZURE_RESOURCE_GROUP: rg-coop-scus-dev
   AZURE_ACR_NAME: acrcoopdev
 
 jobs:
@@ -131,10 +131,37 @@ jobs:
 
       - name: Deploy to Container Apps - Staging
         run: |
-          az containerapp update \
-            --name "${{ inputs.container-app-name }}" \
-            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --image "${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ github.sha }}"
+          if az containerapp show --name "${{ inputs.container-app-name }}" --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" &>/dev/null; then
+            az containerapp update \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --image "${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ github.sha }}"
+          else
+            CAE_ID=$(az containerapp env show \
+              --name "cae-coop-dev" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --query "id" -o tsv)
+            IDENTITY_ID=$(az identity show \
+              --name "id-coop-dev-acr-pull" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --query "id" -o tsv)
+            az containerapp create \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --environment "$CAE_ID" \
+              --image "${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ github.sha }}" \
+              --ingress external --target-port ${{ inputs.server-port }} --transport http \
+              --min-replicas 1 --max-replicas 3 \
+              --registry-server "${{ env.AZURE_ACR_NAME }}.azurecr.io" \
+              --registry-identity "$IDENTITY_ID" \
+              --user-assigned "$IDENTITY_ID" \
+              --env-vars \
+                "SERVER_PORT=${{ inputs.server-port }}" \
+                "SPRING_DATASOURCE_URL=jdbc:postgresql://psql-coop-dev.postgres.database.azure.com:5432/coop?sslmode=require" \
+                "SPRING_DATASOURCE_USERNAME=coopadmin" \
+                "SPRING_DATASOURCE_PASSWORD=C00pDb2024!" \
+                "JWT_SECRET=dev-jwt-secret-change-in-prod"
+          fi
 
       - name: Health check
         run: |
@@ -178,10 +205,37 @@ jobs:
 
       - name: Deploy to Container Apps - Production
         run: |
-          az containerapp update \
-            --name "${{ inputs.container-app-name }}" \
-            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --image "${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ github.sha }}"
+          if az containerapp show --name "${{ inputs.container-app-name }}" --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" &>/dev/null; then
+            az containerapp update \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --image "${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ github.sha }}"
+          else
+            CAE_ID=$(az containerapp env show \
+              --name "cae-coop-dev" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --query "id" -o tsv)
+            IDENTITY_ID=$(az identity show \
+              --name "id-coop-dev-acr-pull" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --query "id" -o tsv)
+            az containerapp create \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --environment "$CAE_ID" \
+              --image "${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ github.sha }}" \
+              --ingress external --target-port ${{ inputs.server-port }} --transport http \
+              --min-replicas 1 --max-replicas 3 \
+              --registry-server "${{ env.AZURE_ACR_NAME }}.azurecr.io" \
+              --registry-identity "$IDENTITY_ID" \
+              --user-assigned "$IDENTITY_ID" \
+              --env-vars \
+                "SERVER_PORT=${{ inputs.server-port }}" \
+                "SPRING_DATASOURCE_URL=jdbc:postgresql://psql-coop-dev.postgres.database.azure.com:5432/coop?sslmode=require" \
+                "SPRING_DATASOURCE_USERNAME=coopadmin" \
+                "SPRING_DATASOURCE_PASSWORD=C00pDb2024!" \
+                "JWT_SECRET=dev-jwt-secret-change-in-prod"
+          fi
 
       - name: Health check - Production
         run: |
