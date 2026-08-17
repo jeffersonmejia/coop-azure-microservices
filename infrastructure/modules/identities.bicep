@@ -1,6 +1,6 @@
 param projectName string
 param environmentName string
-param object tags
+param tags object
 
 var identityName = 'id-${projectName}-${environmentName}-acr-pull'
 

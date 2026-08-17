@@ -1,7 +1,7 @@
 param location string
 param projectName string
 param environmentName string
-param object tags
+param tags object
 
 var workspaceName = 'law-${projectName}-${environmentName}'
 var appInsightsName = 'appi-${projectName}-${environmentName}'
