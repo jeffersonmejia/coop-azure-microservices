@@ -105,8 +105,10 @@ jobs:
 
       - name: Build Docker image
         run: |
+          cp target/${{ inputs.service-name }} ./${{ inputs.service-name }}-native
           IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}"
           docker build -f Dockerfile.native \
+            --build-arg SERVICE_NAME=${{ inputs.service-name }}-native \
             -t "${IMAGE}:${{ github.sha }}" \
             -t "${IMAGE}:staging" \
             .
