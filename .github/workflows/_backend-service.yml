@@ -105,6 +105,7 @@ jobs:
         with:
           java-version: '21'
           distribution: 'graalvm-community'
+          version: 'latest'
 
       - name: Build native image
         run: ./mvnw -Pnative native:compile -DskipTests -B
