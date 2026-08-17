@@ -1,7 +1,6 @@
 package com.cooperative.payment_service.integration;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.http.HttpStatus;
@@ -32,8 +31,7 @@ class PaymentIntegrationTest {
         registry.add("app.jwt.secret", () -> "test-secret-key-for-contracts-32bytes!!");
     }
 
-    @Autowired
-    private TestRestTemplate restTemplate;
+    private TestRestTemplate restTemplate = new TestRestTemplate();
 
     @Test
     void test_unauthenticated_returns_401() {
