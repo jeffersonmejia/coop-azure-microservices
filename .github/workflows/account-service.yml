@@ -1,0 +1,38 @@
+name: Account Service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/account-service/**'
+      - '.github/workflows/account-service.yml'
+      - '.github/workflows/_backend-service.yml'
+  workflow_dispatch:
+    inputs:
+      deploy-to:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  pipeline:
+    uses: ./.github/workflows/_backend-service.yml
+    with:
+      service-name: account-service
+      service-path: services/account-service
+      docker-image-name: coop-account
+      container-app-name: ca-coop-dev-account
+      server-port: '8082'
+      deploy-to: ${{ inputs.deploy-to || 'staging' }}
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}

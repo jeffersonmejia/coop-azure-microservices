@@ -1,0 +1,129 @@
+name: Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+  workflow_dispatch:
+    inputs:
+      deploy-to:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_RESOURCE_GROUP: rg-coop-dev
+  AZURE_ACR_NAME: acrcoopdev
+
+jobs:
+  test:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  build-and-deploy:
+    name: Build and Deploy - Frontend
+    needs: test
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.deploy-to || 'staging' }}
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Angular
+        run: npm run build
+
+      - name: Build Docker image
+        run: |
+          IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/coop-frontend"
+          docker build \
+            -t "${IMAGE}:${{ github.sha }}" \
+            -t "${IMAGE}:${{ inputs.deploy-to || 'staging' }}" \
+            .
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ env.AZURE_ACR_NAME }}
+
+      - name: Push Docker image
+        run: |
+          IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/coop-frontend"
+          docker push "${IMAGE}:${{ github.sha }}"
+          docker push "${IMAGE}:${{ inputs.deploy-to || 'staging' }}"
+
+      - name: Deploy to Container Apps
+        run: |
+          az containerapp update \
+            --name "ca-coop-dev-frontend" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --image "${{ env.AZURE_ACR_NAME }}.azurecr.io/coop-frontend:${{ github.sha }}"
+
+      - name: Health check
+        run: |
+          APP_FQDN=$(az containerapp show \
+            --name "ca-coop-dev-frontend" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --query "properties.configuration.ingress.fqdn" \
+            -o tsv)
+          echo "Waiting for frontend to be ready..."
+          for i in $(seq 1 30); do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${APP_FQDN}" || true)
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i/30 - HTTP $HTTP_STATUS"
+            sleep 10
+          done
+          echo "Health check failed after 30 attempts"
+          exit 1

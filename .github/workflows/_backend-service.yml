@@ -1,0 +1,194 @@
+name: Backend Service Pipeline
+
+on:
+  workflow_call:
+    inputs:
+      service-name:
+        description: 'Maven artifact name e.g. auth-service'
+        required: true
+        type: string
+      service-path:
+        description: 'Relative path to service directory e.g. services/auth-service'
+        required: true
+        type: string
+      docker-image-name:
+        description: 'ACR image name e.g. coop-auth'
+        required: true
+        type: string
+      container-app-name:
+        description: 'Azure Container App name e.g. ca-coop-dev-auth'
+        required: true
+        type: string
+      server-port:
+        description: 'Service port e.g. 8081'
+        required: true
+        type: string
+      deploy-to:
+        description: 'Target environment: staging or production'
+        required: false
+        type: string
+        default: 'staging'
+    secrets:
+      AZURE_CLIENT_ID:
+        required: true
+      AZURE_TENANT_ID:
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        required: true
+
+env:
+  AZURE_RESOURCE_GROUP: rg-coop-dev
+  AZURE_ACR_NAME: acrcoopdev
+
+jobs:
+  test:
+    name: Tests - ${{ inputs.service-name }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.service-path }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: ${{ inputs.service-path }}/pom.xml
+
+      - name: Run tests
+        run: ./mvnw -B test
+
+  build-and-deploy-staging:
+    name: Build and Deploy Staging - ${{ inputs.service-name }}
+    needs: test
+    if: inputs.deploy-to == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: ${{ inputs.service-path }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: ${{ inputs.service-path }}/pom.xml
+
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '21'
+          distribution: 'graalvm-community'
+
+      - name: Build native image
+        run: ./mvnw -Pnative native:compile -DskipTests -B
+
+      - name: Build Docker image
+        run: |
+          IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}"
+          docker build -f Dockerfile.native \
+            -t "${IMAGE}:${{ github.sha }}" \
+            -t "${IMAGE}:staging" \
+            .
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ env.AZURE_ACR_NAME }}
+
+      - name: Push Docker image
+        run: |
+          IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}"
+          docker push "${IMAGE}:${{ github.sha }}"
+          docker push "${IMAGE}:staging"
+
+      - name: Deploy to Container Apps - Staging
+        run: |
+          az containerapp update \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --image "${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ github.sha }}"
+
+      - name: Health check
+        run: |
+          APP_FQDN=$(az containerapp show \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --query "properties.configuration.ingress.fqdn" \
+            -o tsv)
+          echo "Waiting for ${{ inputs.service-name }} to be ready..."
+          for i in $(seq 1 30); do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${APP_FQDN}/actuator/health" || true)
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i/30 - HTTP $HTTP_STATUS"
+            sleep 10
+          done
+          echo "Health check failed after 30 attempts"
+          exit 1
+
+  build-and-deploy-production:
+    name: Build and Deploy Production - ${{ inputs.service-name }}
+    needs: test
+    if: inputs.deploy-to == 'production'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: ${{ inputs.service-path }}
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Container Apps - Production
+        run: |
+          az containerapp update \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --image "${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ github.sha }}"
+
+      - name: Health check - Production
+        run: |
+          APP_FQDN=$(az containerapp show \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --query "properties.configuration.ingress.fqdn" \
+            -o tsv)
+          echo "Waiting for ${{ inputs.service-name }} in production..."
+          for i in $(seq 1 30); do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${APP_FQDN}/actuator/health" || true)
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i/30 - HTTP $HTTP_STATUS"
+            sleep 10
+          done
+          echo "Health check failed after 30 attempts"
+          exit 1

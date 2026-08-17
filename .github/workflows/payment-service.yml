@@ -1,0 +1,38 @@
+name: Payment Service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/payment-service/**'
+      - '.github/workflows/payment-service.yml'
+      - '.github/workflows/_backend-service.yml'
+  workflow_dispatch:
+    inputs:
+      deploy-to:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  pipeline:
+    uses: ./.github/workflows/_backend-service.yml
+    with:
+      service-name: payment-service
+      service-path: services/payment-service
+      docker-image-name: coop-payment
+      container-app-name: ca-coop-dev-payment
+      server-port: '8083'
+      deploy-to: ${{ inputs.deploy-to || 'staging' }}
+    secrets:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}

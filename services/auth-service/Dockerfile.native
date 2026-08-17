@@ -1,0 +1,4 @@
+FROM gcr.io/distroless/cc-debian12
+COPY target/auth-service /app/auth-service
+EXPOSE 8081
+ENTRYPOINT ["/app/auth-service"]

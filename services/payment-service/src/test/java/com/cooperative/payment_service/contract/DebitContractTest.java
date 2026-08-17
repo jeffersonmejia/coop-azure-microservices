@@ -23,7 +23,7 @@ class DebitContractTest {
 
         assertThat(response.success()).isTrue();
         assertThat(response.transactionId()).isEqualTo(42L);
-        assertThat(response.message()).isNull();
+        assertThat(response.message()).isEqualTo("Debit applied");
     }
 
     @Test

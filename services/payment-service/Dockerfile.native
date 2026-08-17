@@ -1,0 +1,4 @@
+FROM gcr.io/distroless/cc-debian12
+COPY target/payment-service /app/payment-service
+EXPOSE 8083
+ENTRYPOINT ["/app/payment-service"]

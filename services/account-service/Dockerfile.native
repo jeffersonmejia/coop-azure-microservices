@@ -1,0 +1,4 @@
+FROM gcr.io/distroless/cc-debian12
+COPY target/account-service /app/account-service
+EXPOSE 8082
+ENTRYPOINT ["/app/account-service"]
