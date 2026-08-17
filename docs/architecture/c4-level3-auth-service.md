@@ -1,52 +1,35 @@
 # C4 Level 3 — auth-service Components
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                                                                         │
-│  auth-service                                                           │
-│                                                                         │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │                                                                 │   │
-│  │  ┌─────────────┐                                               │   │
-│  │  │             │                                               │   │
-│  │  │  Security   │──── JWT Filter                                │   │
-│  │  │  Config     │                                               │   │
-│  │  │             │                                               │   │
-│  │  └──────┬──────┘                                               │   │
-│  │         │                                                       │   │
-│  │         ▼                                                       │   │
-│  │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐        │   │
-│  │  │             │    │             │    │             │        │   │
-│  │  │  Auth       │───►│  User       │───►│  User       │        │   │
-│  │  │  Controller │    │  Service    │    │  Repository │        │   │
-│  │  │             │    │             │    │             │        │   │
-│  │  └─────────────┘    └──────┬──────┘    └──────┬──────┘        │   │
-│  │                            │                   │               │   │
-│  │                            ▼                   ▼               │   │
-│  │                     ┌─────────────┐    ┌─────────────┐        │   │
-│  │                     │             │    │             │        │   │
-│  │                     │  Jwt        │    │  PostgreSQL │        │   │
-│  │                     │  Service    │    │  (auth)     │        │   │
-│  │                     │             │    │             │        │   │
-│  │                     └─────────────┘    └─────────────┘        │   │
-│  │                                                                 │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "auth-service"
+        SecurityConfig["Security<br/>Config"]
+        AuthController["Auth<br/>Controller"]
+        AuthService["Auth<br/>Service"]
+        UserRepository["User<br/>Repository"]
+        JwtService["Jwt<br/>Service"]
+        PostgreSQL[("PostgreSQL<br/>(auth)")]
+    end
+    
+    SecurityConfig --> AuthController
+    AuthController --> AuthService
+    AuthService --> UserRepository
+    AuthService --> JwtService
+    UserRepository --> PostgreSQL
 ```
 
-**Components:**
-| Component | Responsibility |
-|-----------|----------------|
-| SecurityConfig | Spring Security configuration, JWT filter chain |
+**Componentes:**
+| Componente | Responsabilidad |
+|------------|-----------------|
+| SecurityConfig | Configuración Spring Security, JWT filter chain |
 | AuthController | REST endpoints: /register, /login, /me |
-| AuthService | Business logic: registration, login, token generation |
-| UserRepository | Data access: user CRUD operations |
-| JwtService | JWT token creation, validation, parsing |
+| AuthService | Lógica de negocio: registro, login, generación de tokens |
+| UserRepository | Acceso a datos: CRUD de usuarios |
+| JwtService | Creación, validación y parsing de tokens JWT |
 
-**Data flow:**
+**Flujo de datos:**
 1. Request → SecurityConfig (JWT filter)
-2. AuthController receives request
-3. AuthService processes business logic
-4. UserRepository persists to PostgreSQL
-5. JwtService generates/validates tokens
+2. AuthController recibe request
+3. AuthService procesa lógica de negocio
+4. UserRepository persiste en PostgreSQL
+5. JwtService genera/valida tokens

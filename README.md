@@ -1,36 +1,59 @@
 # Coop EC
 
-Cooperative financial application built with Angular, Spring Boot microservices, and Microsoft Azure cloud-native services.
+Aplicación financiera cooperativa construida con Angular, microservicios Spring Boot y servicios cloud-native de Microsoft Azure.
 
 ---
 
-## Overview
+## Índice
 
-Coop EC is a digital banking platform designed for cooperative financial institutions. It enables member management, account operations, transfers, and payment processing through a modern microservices architecture deployed on Azure Container Apps.
-
-**Architecture:** 4 deployable applications (1 frontend + 3 microservices) communicating via REST APIs, backed by PostgreSQL, and deployed on Azure with Infrastructure as Code.
-
-**Key capabilities:**
-- Member authentication and authorization
-- Account management with real-time balance
-- Peer-to-peer transfers
-- Payment processing with external account service integration
-- Transaction history with server-side pagination
-
----
-
-## Features
-
-- **Authentication:** Register, login, JWT-based session management
-- **Accounts:** Auto-creation on first access, balance inquiry, transaction history
-- **Transfers:** Atomic peer-to-peer transfers with balance validation
-- **Payments:** Payment processing with debit request to account service
-- **History:** Server-side paginated transaction and payment history
-- **Frontend:** Angular 21 with Material Design 3, SSR, and proxy to backends
+1. [Overview](#1-overview)
+2. [Features](#2-features)
+3. [Technology Stack](#3-technology-stack)
+4. [Repository Structure](#4-repository-structure)
+5. [Architecture](#5-architecture)
+6. [Deployment Architecture](#6-deployment-architecture)
+7. [Sequence Diagrams](#7-sequence-diagrams)
+8. [Microservices](#8-microservices)
+9. [API Documentation](#9-api-documentation)
+10. [Security](#10-security)
+11. [Local Development](#11-local-development)
+12. [Configuration](#12-configuration)
+13. [Docker](#13-docker)
+14. [Testing](#14-testing)
+15. [Infrastructure as Code](#15-infrastructure-as-code)
+16. [Azure Deployment](#16-azure-deployment)
+17. [Project Status](#17-project-status)
+18. [Dataset](#18-dataset)
 
 ---
 
-## Technology Stack
+## 1. Overview
+
+Coop EC es una plataforma de banca digital diseñada para instituciones financieras cooperativas. Permite gestión de socios, operaciones de cuentas, transferencias y procesamiento de pagos mediante una arquitectura de microservicios moderna desplegada en Azure Container Apps.
+
+**Arquitectura:** 4 aplicaciones desplegables, 1 frontend y 3 microservicios, comunicándose vía REST APIs, con PostgreSQL como persistencia, desplegadas en Azure con Infrastructure as Code.
+
+**Capacidades principales:**
+- Autenticación y autorización de socios
+- Gestión de cuentas con saldo en tiempo real
+- Transferencias peer-to-peer
+- Procesamiento de pagos con integración al account-service
+- Historial de operaciones con paginación server-side
+
+---
+
+## 2. Features
+
+- **Autenticación:** Registro, login, gestión de sesiones con JWT
+- **Cuentas:** Creación automática al primer acceso, consulta de saldo, historial de transacciones
+- **Transferencias:** Transferencias atómicas peer-to-peer con validación de saldo
+- **Pagos:** Procesamiento de pagos con solicitud de débito al account-service
+- **Historial:** Transacciones y pagos paginados server-side
+- **Frontend:** Angular 21 con Material Design 3, SSR y proxy hacia backends
+
+---
+
+## 3. Technology Stack
 
 ### Frontend
 - Angular 21
@@ -56,7 +79,7 @@ Coop EC is a digital banking platform designed for cooperative financial institu
 - Azure Monitor / Log Analytics
 
 ### Infrastructure as Code
-- Azure Bicep (modular)
+- Azure Bicep modular
 
 ### Testing
 - Unit Tests: JUnit 5 + Mockito
@@ -66,7 +89,7 @@ Coop EC is a digital banking platform designed for cooperative financial institu
 
 ---
 
-## Repository Structure
+## 4. Repository Structure
 
 ```
 coop-ec/
@@ -87,20 +110,20 @@ coop-ec/
 └── README.md
 ```
 
-**Directories:**
-- `frontend/` — Angular SSR application with Material Design 3
-- `services/` — Spring Boot microservices (auth, account, payment)
-- `infrastructure/` — Azure Bicep modular infrastructure
-- `scripts/data/` — Berka/PKDD'99 dataset importer and tools
-- `docs/architecture/` — C4 model diagrams and deployment architecture
+**Directorios:**
+- `frontend/` — Aplicación Angular SSR con Material Design 3
+- `services/` — Microservicios Spring Boot (auth, account, payment)
+- `infrastructure/` — Infraestructura modular Azure Bicep
+- `scripts/data/` — Importador de dataset Berka/PKDD'99
+- `docs/architecture/` — Diagramas C4 y arquitectura de despliegue
 
 ---
 
-## Architecture
+## 5. Architecture
 
-Architecture documentation uses the C4 Model (levels 1-3) with deployment and sequence diagrams.
+La documentación arquitectónica utiliza C4 Model niveles 1-3 con diagramas de despliegue y secuencia.
 
-See [docs/architecture/](docs/architecture/) for diagrams:
+Ver [docs/architecture/](docs/architecture/) para diagramas:
 
 - C4 Level 1 — System Context
 - C4 Level 2 — Container Diagram
@@ -110,215 +133,203 @@ See [docs/architecture/](docs/architecture/) for diagrams:
 
 ---
 
-## Deployment Architecture
+## 6. Deployment Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Internet                                  │
-│                           │                                      │
-│                           ▼                                      │
-│                   ┌──────────────┐                               │
-│                   │   Frontend   │                               │
-│                   │   (Angular)  │                               │
-│                   └──────┬───────┘                               │
-│                          │ HTTPS                                 │
-│                          ▼                                       │
-│        ┌─────────────────────────────────────┐                   │
-│        │   Azure Container Apps Environment  │                   │
-│        │                                     │                   │
-│        │  ┌────────────┐  ┌────────────┐    │                   │
-│        │  │auth-service│  │account-    │    │                   │
-│        │  │   :8081    │  │service     │    │                   │
-│        │  └─────┬──────┘  │   :8082    │    │                   │
-│        │        │         └─────┬──────┘    │                   │
-│        │        │               │            │                   │
-│        │        ▼               ▼            │                   │
-│        │  ┌─────────────────────────────┐    │                   │
-│        │  │      Azure Database         │    │                   │
-│        │  │      for PostgreSQL         │    │                   │
-│        │  └─────────────────────────────┘    │                   │
-│        │                                     │                   │
-│        │  ┌────────────┐                     │                   │
-│        │  │payment-    │                     │                   │
-│        │  │service     │                     │                   │
-│        │  │   :8083    │                     │                   │
-│        │  └─────┬──────┘                     │                   │
-│        │        │ HTTP (internal)            │                   │
-│        │        └───────────────►            │                   │
-│        │                    account-service  │                   │
-│        └─────────────────────────────────────┘                   │
-│                                                                  │
-│        ┌────────────┐  ┌────────────┐  ┌────────────┐           │
-│        │    ACR     │  │ Key Vault  │  │   Logs     │           │
-│        │  (images)  │  │ (secrets)  │  │ (monitor)  │           │
-│        └────────────┘  └────────────┘  └────────────┘           │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "Internet"
+        User["Socio / Usuario"]
+    end
+    
+    subgraph "Azure Container Apps Environment"
+        Frontend["Frontend<br/>Angular<br/>:4200"]
+        AuthService["auth-service<br/>:8081"]
+        AccountService["account-service<br/>:8082"]
+        PaymentService["payment-service<br/>:8083"]
+    end
+    
+    subgraph "Azure Services"
+        ACR["Azure Container Registry"]
+        PostgreSQL["Azure Database<br/>for PostgreSQL"]
+        KeyVault["Azure Key Vault"]
+        Logs["Log Analytics"]
+    end
+    
+    User -->|"HTTPS"| Frontend
+    Frontend -->|"REST API"| AuthService
+    Frontend -->|"REST API"| AccountService
+    Frontend -->|"REST API"| PaymentService
+    PaymentService -->|"HTTP interna"| AccountService
+    AuthService --> PostgreSQL
+    AccountService --> PostgreSQL
+    PaymentService --> PostgreSQL
+    ACR --> AuthService
+    ACR --> AccountService
+    ACR --> PaymentService
+    ACR --> Frontend
+    KeyVault -.-> AuthService
+    KeyVault -.-> AccountService
+    KeyVault -.-> PaymentService
 ```
 
-**Resources:**
-- **Public:** Frontend (via Container Apps ingress)
-- **Internal:** auth-service, account-service, payment-service
-- **Data:** Azure Database for PostgreSQL
-- **Secrets:** Azure Key Vault
-- **Images:** Azure Container Registry
-- **Monitoring:** Log Analytics / Azure Monitor
+**Recursos:**
+- **Público:** Frontend (vía Container Apps ingress)
+- **Internos:** auth-service, account-service, payment-service
+- **Datos:** Azure Database for PostgreSQL
+- **Secretos:** Azure Key Vault
+- **Imágenes:** Azure Container Registry
+- **Monitoreo:** Log Analytics / Azure Monitor
 
 ---
 
-## Sequence Diagrams
+## 7. Sequence Diagrams
 
-### Authentication
+### 7.1 Autenticación
 
-```
-User          Angular         auth-service      PostgreSQL
-  │               │                │                │
-  │   login       │                │                │
-  ├──────────────►│                │                │
-  │               │  POST /auth/login               │
-  │               ├───────────────►│                │
-  │               │                │  query user    │
-  │               │                ├───────────────►│
-  │               │                │  user data     │
-  │               │                │◄───────────────┤
-  │               │                │  verify BCrypt │
-  │               │                │  generate JWT  │
-  │               │  JWT token     │                │
-  │               │◄───────────────┤                │
-  │  token        │                │                │
-  │◄──────────────┤                │                │
+```mermaid
+sequenceDiagram
+    actor User as Socio
+    participant Angular as Frontend
+    participant Auth as auth-service
+    participant DB as PostgreSQL
+    
+    User->>Angular: Login
+    Angular->>Auth: POST /auth/login
+    Auth->>DB: query user by email
+    DB-->>Auth: user data
+    Auth->>Auth: verify BCrypt password
+    Auth->>Auth: generate JWT (sub, uid, role)
+    Auth-->>Angular: JWT token
+    Angular-->>User: token
 ```
 
-### Account Transfer
+### 7.2 Transferencia
 
-```
-User          Angular         account-service    PostgreSQL
-  │               │                │                │
-  │   transfer    │                │                │
-  ├──────────────►│                │                │
-  │               │  POST /accounts/transfer        │
-  │               ├───────────────►│                │
-  │               │                │  validate      │
-  │               │                │  debit source  │
-  │               │                │  credit dest   │
-  │               │                │  persist       │
-  │               │                ├───────────────►│
-  │               │                │  success       │
-  │               │                │◄───────────────┤
-  │               │  success       │                │
-  │               │◄───────────────┤                │
-  │  success      │                │                │
-  │◄──────────────┤                │                │
+```mermaid
+sequenceDiagram
+    actor User as Socio
+    participant Angular as Frontend
+    participant Account as account-service
+    participant DB as PostgreSQL
+    
+    User->>Angular: Transfer
+    Angular->>Account: POST /accounts/transfer
+    Account->>Account: validate (balance, accounts)
+    Account->>DB: debit source account
+    Account->>DB: credit destination account
+    Account->>DB: INSERT TRANSFER_OUT
+    Account->>DB: INSERT TRANSFER_IN
+    DB-->>Account: success
+    Account-->>Angular: success
+    Angular-->>User: success
 ```
 
-### Payment Processing
+### 7.3 Procesamiento de Pago
 
-```
-User          Angular      payment-service   account-service   PostgreSQL
-  │               │              │                │                │
-  │   payment     │              │                │                │
-  ├──────────────►│              │                │                │
-  │               │ POST /payments               │                │
-  │               ├─────────────►│                │                │
-  │               │              │  create PENDING│                │
-  │               │              │  persist       │                │
-  │               │              ├───────────────►│                │
-  │               │              │                │  POST /debit   │
-  │               │              │                │  validate      │
-  │               │              │                │  persist       │
-  │               │              │                ├───────────────►│
-  │               │              │                │  success       │
-  │               │              │                │◄───────────────┤
-  │               │              │  debit result  │                │
-  │               │              │◄───────────────┤                │
-  │               │              │  update status │                │
-  │               │              │  COMPLETED/FAILED               │
-  │               │              ├───────────────►│                │
-  │               │  result      │                │                │
-  │               │◄─────────────┤                │                │
-  │  result       │              │                │                │
-  │◄──────────────┤              │                │                │
+```mermaid
+sequenceDiagram
+    actor User as Socio
+    participant Angular as Frontend
+    participant Payment as payment-service
+    participant Account as account-service
+    participant DB as PostgreSQL
+    
+    User->>Angular: Payment
+    Angular->>Payment: POST /payments
+    Payment->>Payment: create payment (PENDING)
+    Payment->>DB: INSERT payment
+    Payment->>Account: POST /api/accounts/debit
+    Account->>Account: validate (balance)
+    Account->>DB: debit account
+    Account->>DB: INSERT PAYMENT transaction
+    DB-->>Account: success
+    Account-->>Payment: debit result
+    Payment->>Payment: update status (COMPLETED/FAILED)
+    Payment->>DB: UPDATE payment
+    Payment-->>Angular: result
+    Angular-->>User: result
 ```
 
 ---
 
-## Microservices
+## 8. Microservices
 
-| Service | Responsibility | Technology | Port |
-|---------|----------------|------------|------|
-| auth-service | Authentication, authorization, user management | Spring Boot, JWT, BCrypt | 8081 |
-| account-service | Accounts, transfers, transaction history | Spring Boot, JPA, Flyway | 8082 |
-| payment-service | Payment processing, debit requests | Spring Boot, RestClient | 8083 |
+| Servicio | Responsabilidad | Tecnología | Puerto |
+|----------|----------------|------------|--------|
+| auth-service | Autenticación, autorización, gestión de usuarios | Spring Boot, JWT, BCrypt | 8081 |
+| account-service | Cuentas, transferencias, historial de transacciones | Spring Boot, JPA, Flyway | 8082 |
+| payment-service | Procesamiento de pagos, solicitudes de débito | Spring Boot, RestClient | 8083 |
 | frontend | Web UI, SSR, routing | Angular 21, Material 3 | 4200 |
 
 ---
 
-## API Documentation
+## 9. API Documentation
 
-All backend services expose OpenAPI documentation:
+Todos los servicios backend exponen documentación OpenAPI:
 
 - **auth-service:** http://localhost:8081/swagger-ui.html
 - **account-service:** http://localhost:8082/swagger-ui.html
 - **payment-service:** http://localhost:8083/swagger-ui.html
 
-OpenAPI JSON available at `/v3/api-docs` on each service.
+OpenAPI JSON disponible en `/v3/api-docs` de cada servicio.
 
 ---
 
-## Security
+## 10. Security
 
-- **Spring Security** with JWT authentication
-- **BCrypt** password hashing
+- **Spring Security** con autenticación JWT
+- **BCrypt** para hashing de contraseñas
 - **Role-based access** (USER, ADMIN)
-- **JWT propagation** between services (payment → account)
-- **Azure Key Vault** for production secrets
-- **Managed Identity** for Azure service authentication
-- **Environment variables** for configuration
-- **HTTPS** in production via Azure Container Apps
+- **JWT propagation** entre servicios (payment → account)
+- **Azure Key Vault** para secretos de producción
+- **Managed Identity** para autenticación de servicios Azure
+- **Variables de entorno** para configuración
+- **HTTPS** en producción vía Azure Container Apps
 
 ---
 
-## Local Development
+## 11. Local Development
 
-### Prerequisites
+### Prerrequisitos
 
 - Java 21
 - Maven 3.9+
 - Node.js 22+
 - Docker & Docker Compose
-- PostgreSQL (or use Docker Compose)
+- PostgreSQL (o usar Docker Compose)
 
-### Quick Start
+### Inicio Rápido
 
 ```bash
-# Start all services
+# Iniciar todos los servicios
 docker compose up
 
-# Access frontend
+# Acceder al frontend
 open http://localhost:4200
 ```
 
-### Manual Start
+### Inicio Manual
 
 ```bash
-# Start PostgreSQL
+# Iniciar PostgreSQL
 docker compose up postgres -d
 
-# Start services (each in separate terminal)
+# Iniciar servicios (cada uno en terminal separado)
 cd services/auth-service && mvn spring-boot:run
 cd services/account-service && mvn spring-boot:run
 cd services/payment-service && mvn spring-boot:run
 
-# Start frontend
+# Iniciar frontend
 cd frontend && npm start
 ```
 
 ---
 
-## Configuration
+## 12. Configuration
 
-### Environment Variables
+### Variables de Entorno
 
-| Variable | Description | Default |
+| Variable | Descripción | Default |
 |----------|-------------|---------|
 | `DB_HOST` | PostgreSQL host | localhost |
 | `DB_PORT` | PostgreSQL port | 5432 |
@@ -332,26 +343,26 @@ cd frontend && npm start
 
 ---
 
-## Docker
+## 13. Docker
 
-Each application has its own Dockerfile with multi-stage build:
+Cada aplicación tiene su propio Dockerfile con build multi-stage:
 
 - **Frontend:** Node.js build + Nginx/Node SSR
 - **Backend services:** Maven build + JRE 21
 
-Docker Compose orchestrates the full local environment:
+Docker Compose orquesta el entorno local completo:
 
 ```bash
-docker compose up          # Start all services
-docker compose up -d       # Start in background
-docker compose down        # Stop all services
+docker compose up          # Iniciar todos los servicios
+docker compose up -d       # Iniciar en background
+docker compose down        # Detener todos los servicios
 ```
 
-Azure Container Registry stores production images.
+Azure Container Registry almacena las imágenes de producción.
 
 ---
 
-## Testing
+## 14. Testing
 
 ### Unit Tests
 
@@ -363,7 +374,7 @@ cd services/payment-service && mvn test
 
 ### Integration Tests
 
-Requires Testcontainers (Docker must be running):
+Requiere Testcontainers, Docker debe estar ejecutándose:
 
 ```bash
 mvn verify -Pintegration-tests
@@ -378,25 +389,25 @@ mvn verify -Pcontract-tests
 ### End-to-End Tests
 
 ```bash
-# Requires full stack running
+# Requiere stack completo ejecutándose
 mvn verify -Pe2e-tests
 ```
 
 ### Volume Tests
 
 ```bash
-# Import Berka dataset
+# Importar dataset Berka
 ./scripts/data/import-berka.sh full
 
-# Run volume validation
+# Ejecutar validación de volumen
 ./scripts/data/volume-test.sh
 ```
 
 ---
 
-## Infrastructure as Code
+## 15. Infrastructure as Code
 
-Azure Bicep manages infrastructure with modular design:
+Azure Bicep administra la infraestructura con diseño modular:
 
 ```
 infrastructure/
@@ -416,28 +427,28 @@ infrastructure/
     └── dev.bicepparam           # Development environment
 ```
 
-**Principles:**
-- `main.bicep` only composes modules
-- Each module has single responsibility
-- Secrets never in versioned parameters
-- Environment-specific via `.bicepparam` files
+**Principios:**
+- `main.bicep` solo compone módulos
+- Cada módulo tiene responsabilidad única
+- Secretos nunca en parámetros versionados
+- Entorno específico vía archivos `.bicepparam`
 
 ---
 
-## Azure Deployment
+## 16. Azure Deployment
 
 ```bash
-# Deploy infrastructure and applications
+# Desplegar infraestructura y aplicaciones
 ./scripts/deploy.sh
 ```
 
-**Process:**
-1. Bicep validates and deploys Azure resources
-2. Docker images built and pushed to ACR
-3. Container Apps updated with new images
-4. Services restart with zero downtime
+**Proceso:**
+1. Bicep valida y despliega recursos Azure
+2. Docker images construidas y subidas a ACR
+3. Container Apps actualizadas con nuevas imágenes
+4. Servicios reinician sin downtime
 
-**Resources created:**
+**Recursos creados:**
 - `rg-coop-dev` — Resource Group
 - `acrcoopdev` — Container Registry
 - `cae-coop-dev` — Container Apps Environment
@@ -447,32 +458,32 @@ infrastructure/
 
 ---
 
-## Project Status
+## 17. Project Status
 
-**Stage:** MVP Development
+**Etapa:** MVP Development
 
-**Completed:**
-- 001-010: Core functionality (auth, accounts, payments, frontend)
+**Completado:**
+- 001-010: Funcionalidad core (auth, accounts, payments, frontend)
 - 011: Testing (unit, integration, contract, E2E)
-- 012: Bicep infrastructure
-- 013: Azure deployment script
+- 012: Infraestructura Bicep
+- 013: Script de deployment Azure
 - 014: Observability (actuator, correlation IDs)
-- 015: Berka dataset importer
-- 016: Volume testing
+- 015: Importador dataset Berka
+- 016: Pruebas de volumen
+- 017: Documentación (este documento)
 
-**Remaining:**
-- 017: Documentation (this document)
-- 018: Out of scope
-- 019: Final criteria
+**Pendiente:**
+- 018: Alcance fuera del MVP
+- 019: Criterio de finalización
 
 ---
 
-## Dataset
+## 18. Dataset
 
-This project uses the Berka/PKDD'99 financial dataset for testing and demonstration.
+Este proyecto utiliza el dataset financiero Berka/PKDD'99 para testing y demostración.
 
-**Source:** PKDD'99 Discovery Challenge (https://sorry.vse.cz/~berka/challenge/pkdd1999/)
+**Fuente:** PKDD'99 Discovery Challenge (https://sorry.vse.cz/~berka/challenge/pkdd1999/)
 
-**Usage:** Import via `./scripts/data/import-berka.sh` — not loaded automatically.
+**Uso:** Importar vía `./scripts/data/import-berka.sh` — no se carga automáticamente.
 
-See [scripts/data/README.md](scripts/data/README.md) for details.
+Ver [scripts/data/README.md](scripts/data/README.md) para detalles.

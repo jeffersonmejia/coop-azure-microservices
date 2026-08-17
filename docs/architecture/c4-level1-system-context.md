@@ -1,48 +1,36 @@
 # C4 Level 1 — System Context
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                                                                         │
-│                          ┌─────────────────┐                           │
-│                          │                 │                           │
-│                          │    Socio /      │                           │
-│                          │    Usuario      │                           │
-│                          │                 │                           │
-│                          └────────┬────────┘                           │
-│                                   │                                     │
-│                                   │ HTTPS                              │
-│                                   ▼                                     │
-│                          ┌─────────────────┐                           │
-│                          │                 │                           │
-│                          │    Coop EC      │                           │
-│                          │                 │                           │
-│                          │  Banking App    │                           │
-│                          │                 │                           │
-│                          └────────┬────────┘                           │
-│                                   │                                     │
-│                                   │                                     │
-│          ┌────────────────────────┼────────────────────────┐           │
-│          │                        │                        │           │
-│          ▼                        ▼                        ▼           │
-│  ┌───────────────┐      ┌───────────────┐      ┌───────────────┐      │
-│  │               │      │               │      │               │      │
-│  │   Microsoft   │      │   Database    │      │   External    │      │
-│  │    Azure      │      │  (PostgreSQL) │      │   Services    │      │
-│  │               │      │               │      │               │      │
-│  └───────────────┘      └───────────────┘      └───────────────┘      │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "Actores"
+        User["Socio /<br/>Usuario"]
+    end
+    
+    subgraph "Sistema"
+        CoopEC["Coop EC<br/>Aplicación Bancaria"]
+    end
+    
+    subgraph "Infraestructura"
+        Azure["Microsoft<br/>Azure"]
+        Database["Database<br/>(PostgreSQL)"]
+        External["Servicios<br/>Externos"]
+    end
+    
+    User -->|"HTTPS"| CoopEC
+    CoopEC --> Azure
+    CoopEC --> Database
+    CoopEC --> External
 ```
 
-**Actors:**
-- **Socio/Usuario:** End user accessing the banking application
-- **Coop EC:** The cooperative banking system
-- **Microsoft Azure:** Cloud infrastructure (Container Apps, ACR, Key Vault)
-- **Database:** PostgreSQL for persistent storage
-- **External Services:** Third-party integrations (future)
+**Actores:**
+- **Socio/Usuario:** Usuario final accediendo a la aplicación bancaria
+- **Coop EC:** El sistema bancario cooperativo
+- **Microsoft Azure:** Infraestructura cloud (Container Apps, ACR, Key Vault)
+- **Database:** PostgreSQL para almacenamiento persistente
+- **External Services:** Integraciones con terceros (futuro)
 
-**Key interactions:**
-- User accesses Coop EC via HTTPS
-- Coop EC runs on Azure Container Apps
-- Coop EC stores data in PostgreSQL
-- Azure provides infrastructure, secrets, and monitoring
+**Interacciones principales:**
+- El usuario accede a Coop EC vía HTTPS
+- Coop EC se ejecuta en Azure Container Apps
+- Coop EC almacena datos en PostgreSQL
+- Azure provee infraestructura, secretos y monitoreo

@@ -1,74 +1,45 @@
 # Sequence Diagram — Account Transfer
 
-```
-┌──────┐    ┌─────────┐    ┌───────────────┐    ┌────────────┐
-│ User │    │ Angular │    │account-service│    │ PostgreSQL │
-└──┬───┘    └────┬────┘    └──────┬────────┘    └─────┬──────┘
-   │             │                │                    │
-   │  1. transfer│                │                    │
-   │  {to, amt}  │                │                    │
-   ├────────────►│                │                    │
-   │             │                │                    │
-   │             │  2. POST       │                    │
-   │             │  /accounts/transfer                 │
-   │             │  + JWT         │                    │
-   │             ├───────────────►│                    │
-   │             │                │                    │
-   │             │                │  3. JWT Filter     │
-   │             │                │  extract userId    │
-   │             │                │                    │
-   │             │                │  4. validate       │
-   │             │                │  - source exists   │
-   │             │                │  - dest exists     │
-   │             │                │  - sufficient bal  │
-   │             │                │  - different accnt │
-   │             │                │                    │
-   │             │                │  5. BEGIN TXN      │
-   │             │                │                    │
-   │             │                │  6. debit source   │
-   │             │                │  UPDATE balance    │
-   │             │                ├───────────────────►│
-   │             │                │                    │
-   │             │                │  7. credit dest    │
-   │             │                │  UPDATE balance    │
-   │             │                ├───────────────────►│
-   │             │                │                    │
-   │             │                │  8. INSERT txn     │
-   │             │                │  (TRANSFER_OUT)    │
-   │             │                ├───────────────────►│
-   │             │                │                    │
-   │             │                │  9. INSERT txn     │
-   │             │                │  (TRANSFER_IN)     │
-   │             │                ├───────────────────►│
-   │             │                │                    │
-   │             │                │  10. COMMIT        │
-   │             │                │                    │
-   │             │  11. success   │                    │
-   │             │◄───────────────┤                    │
-   │             │                │                    │
-   │  12. success│                │                    │
-   │◄────────────┤                │                    │
-   │             │                │                    │
+```mermaid
+sequenceDiagram
+    actor User as Socio
+    participant Angular as Frontend
+    participant Account as account-service
+    participant DB as PostgreSQL
+    
+    User->>Angular: Transferencia {to, amount}
+    Angular->>Account: POST /accounts/transfer + JWT
+    Account->>Account: JWT Filter, extract userId
+    Account->>Account: validate (source, dest, balance)
+    Account->>Account: BEGIN TRANSACTION
+    Account->>DB: debit source account
+    Account->>DB: credit destination account
+    Account->>DB: INSERT TRANSFER_OUT
+    Account->>DB: INSERT TRANSFER_IN
+    Account->>Account: COMMIT
+    DB-->>Account: success
+    Account-->>Angular: success
+    Angular-->>User: success
 ```
 
-## Transfer Validation Rules
+## Reglas de Validación
 
-1. Source account must exist and belong to user
-2. Destination account must exist
-3. Source and destination must be different accounts
-4. Source balance must be >= transfer amount
-5. Transfer is atomic (all or nothing)
+1. La cuenta origen debe existir y pertenecer al usuario
+2. La cuenta destino debe existir
+3. Las cuentas origen y destino deben ser diferentes
+4. El saldo de la cuenta origen debe ser >= monto de transferencia
+5. La transferencia es atómica (todo o nada)
 
-## Transaction Types Created
+## Tipos de Transacción Creados
 
-- **TRANSFER_OUT:** Debit from source account
-- **TRANSFER_IN:** Credit to destination account
+- **TRANSFER_OUT:** Débito de la cuenta origen
+- **TRANSFER_IN:** Crédito a la cuenta destino
 
-## Error Scenarios
+## Escenarios de Error
 
-| Error | HTTP Status | Message |
+| Error | HTTP Status | Mensaje |
 |-------|-------------|---------|
-| Insufficient balance | 422 | Saldo insuficiente |
-| Same account | 400 | No se puede transferir a la misma cuenta |
-| Account not found | 404 | Cuenta origen no encontrada |
-| Destination not found | 404 | Cuenta destino no encontrada |
+| Saldo insuficiente | 422 | Saldo insuficiente |
+| Misma cuenta | 400 | No se puede transferir a la misma cuenta |
+| Cuenta origen no encontrada | 404 | Cuenta origen no encontrada |
+| Cuenta destino no encontrada | 404 | Cuenta destino no encontrada |

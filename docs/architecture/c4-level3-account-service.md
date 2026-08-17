@@ -1,62 +1,39 @@
 # C4 Level 3 — account-service Components
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                                                                         │
-│  account-service                                                        │
-│                                                                         │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │                                                                 │   │
-│  │  ┌─────────────┐                                               │   │
-│  │  │             │                                               │   │
-│  │  │  Security   │──── JWT Filter                                │   │
-│  │  │  Config     │                                               │   │
-│  │  │             │                                               │   │
-│  │  └──────┬──────┘                                               │   │
-│  │         │                                                       │   │
-│  │         ▼                                                       │   │
-│  │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐        │   │
-│  │  │             │    │             │    │             │        │   │
-│  │  │  Account    │───►│  Account    │───►│  Account    │        │   │
-│  │  │  Controller │    │  Service    │    │  Repository │        │   │
-│  │  │             │    │             │    │             │        │   │
-│  │  └─────────────┘    └──────┬──────┘    └──────┬──────┘        │   │
-│  │                            │                   │               │   │
-│  │                            │                   ▼               │   │
-│  │                            │            ┌─────────────┐        │   │
-│  │                            │            │             │        │   │
-│  │                            │            │  Account    │        │   │
-│  │                            │            │  Transaction│        │   │
-│  │                            │            │  Repository │        │   │
-│  │                            │            │             │        │   │
-│  │                            │            └──────┬──────┘        │   │
-│  │                            │                   │               │   │
-│  │                            ▼                   ▼               │   │
-│  │                     ┌─────────────┐    ┌─────────────┐        │   │
-│  │                     │             │    │             │        │   │
-│  │                     │  Domain     │    │  PostgreSQL │        │   │
-│  │                     │  Logic      │    │  (accounts) │        │   │
-│  │                     │             │    │             │        │   │
-│  │                     └─────────────┘    └─────────────┘        │   │
-│  │                                                                 │   │
-│  └─────────────────────────────────────────────────────────────────┘   │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph "account-service"
+        SecurityConfig["Security<br/>Config"]
+        AccountController["Account<br/>Controller"]
+        AccountService["Account<br/>Service"]
+        AccountRepository["Account<br/>Repository"]
+        TransactionRepository["AccountTransaction<br/>Repository"]
+        DomainLogic["Domain<br/>Logic"]
+        PostgreSQL[("PostgreSQL<br/>(accounts)")]
+    end
+    
+    SecurityConfig --> AccountController
+    AccountController --> AccountService
+    AccountService --> AccountRepository
+    AccountService --> TransactionRepository
+    AccountService --> DomainLogic
+    AccountRepository --> PostgreSQL
+    TransactionRepository --> PostgreSQL
 ```
 
-**Components:**
-| Component | Responsibility |
-|-----------|----------------|
-| SecurityConfig | Spring Security, JWT validation, CurrentUser extraction |
+**Componentes:**
+| Componente | Responsabilidad |
+|------------|-----------------|
+| SecurityConfig | Spring Security, validación JWT, extracción de CurrentUser |
 | AccountController | REST endpoints: /me, /me/transactions, /transfer, /debit |
-| AccountService | Business logic: create account, transfer, debit, history |
-| AccountRepository | Data access: account CRUD |
-| AccountTransactionRepository | Data access: transaction queries with pagination |
-| Domain Logic | Balance validation, atomic transfers, transaction types |
+| AccountService | Lógica de negocio: crear cuenta, transferir, débito, historial |
+| AccountRepository | Acceso a datos: CRUD de cuentas |
+| AccountTransactionRepository | Acceso a datos: queries de transacciones con paginación |
+| Domain Logic | Validación de saldo, transferencias atómicas, tipos de transacción |
 
-**Data flow:**
+**Flujo de datos:**
 1. Request → SecurityConfig (JWT filter, CurrentUser)
-2. AccountController receives request
-3. AccountService processes business logic
-4. Domain Logic validates rules (balance, atomicity)
-5. Repositories persist to PostgreSQL
+2. AccountController recibe request
+3. AccountService procesa lógica de negocio
+4. Domain Logic valida reglas (saldo, atomicidad)
+5. Repositories persisten en PostgreSQL

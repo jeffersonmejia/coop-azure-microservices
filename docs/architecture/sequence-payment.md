@@ -1,89 +1,54 @@
 # Sequence Diagram — Payment Processing
 
-```
-┌──────┐    ┌─────────┐    ┌───────────────┐    ┌───────────────┐    ┌────────────┐
-│ User │    │ Angular │    │payment-service│    │account-service│    │ PostgreSQL │
-└──┬───┘    └────┬────┘    └──────┬────────┘    └──────┬────────┘    └─────┬──────┘
-   │             │                │                     │                    │
-   │  1. payment │                │                     │                    │
-   │  {acct, amt,ref}            │                     │                    │
-   ├────────────►│                │                     │                    │
-   │             │                │                     │                    │
-   │             │  2. POST       │                     │                    │
-   │             │  /payments     │                     │                    │
-   │             │  + JWT         │                     │                    │
-   │             ├───────────────►│                     │                    │
-   │             │                │                     │                    │
-   │             │                │  3. JWT Filter      │                    │
-   │             │                │  extract userId     │                    │
-   │             │                │                     │                    │
-   │             │                │  4. create payment  │                    │
-   │             │                │  status: PENDING    │                    │
-   │             │                │                     │                    │
-   │             │                │  5. INSERT payment  │                    │
-   │             │                ├─────────────────────────────────────────►│
-   │             │                │                     │                    │
-   │             │                │  6. debit request   │                    │
-   │             │                │  POST /api/accounts/debit               │
-   │             │                │  + Authorization: Bearer JWT            │
-   │             │                ├────────────────────►│                    │
-   │             │                │                     │                    │
-   │             │                │                     │  7. validate      │
-   │             │                │                     │  - account exists │
-   │             │                │                     │  - sufficient bal │
-   │             │                │                     │                    │
-   │             │                │                     │  8. BEGIN TXN     │
-   │             │                │                     │                    │
-   │             │                │                     │  9. debit account │
-   │             │                │                     ├───────────────────►│
-   │             │                │                     │                    │
-   │             │                │                     │  10. INSERT txn   │
-   │             │                │                     │  type: PAYMENT    │
-   │             │                │                     ├───────────────────►│
-   │             │                │                     │                    │
-   │             │                │                     │  11. COMMIT       │
-   │             │                │                     │                    │
-   │             │                │  12. debit result   │                    │
-   │             │                │  {success, txnId}   │                    │
-   │             │                │◄────────────────────┤                    │
-   │             │                │                     │                    │
-   │             │                │  13. update status  │                    │
-   │             │                │  COMPLETED / FAILED │                    │
-   │             │                │                     │                    │
-   │             │                │  14. UPDATE payment │                    │
-   │             │                ├─────────────────────────────────────────►│
-   │             │                │                     │                    │
-   │             │  15. result    │                     │                    │
-   │             │◄───────────────┤                     │                    │
-   │             │                │                     │                    │
-   │  16. result │                │                     │                    │
-   │◄────────────┤                │                     │                    │
-   │             │                │                     │                    │
+```mermaid
+sequenceDiagram
+    actor User as Socio
+    participant Angular as Frontend
+    participant Payment as payment-service
+    participant Account as account-service
+    participant DB as PostgreSQL
+    
+    User->>Angular: Pago {account, amount, reference}
+    Angular->>Payment: POST /payments + JWT
+    Payment->>Payment: JWT Filter, extract userId
+    Payment->>Payment: create payment (PENDING)
+    Payment->>DB: INSERT payment
+    Payment->>Account: POST /api/accounts/debit + Authorization: Bearer JWT
+    Account->>Account: validate (account, balance)
+    Account->>Account: BEGIN TRANSACTION
+    Account->>DB: debit account
+    Account->>DB: INSERT PAYMENT transaction
+    Account->>Account: COMMIT
+    DB-->>Account: success
+    Account-->>Payment: debit result {success, transactionId}
+    Payment->>Payment: update status (COMPLETED/FAILED)
+    Payment->>DB: UPDATE payment
+    Payment-->>Angular: result
+    Angular-->>User: result
 ```
 
-## Payment States
+## Estados de Pago
 
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING
+    PENDING --> COMPLETED: débito exitoso
+    PENDING --> FAILED: débito fallido
+    COMPLETED --> [*]
+    FAILED --> [*]
 ```
-┌─────────┐
-│ PENDING  │
-└────┬────┘
-     │
-     ├── debit success ──► COMPLETED
-     │
-     └── debit failure ──► FAILED
-```
 
-## Communication Details
+## Detalles de Comunicación
 
-| Step | From → To | Protocol | Purpose |
-|------|-----------|----------|---------|
-| 2 | Frontend → payment-service | REST/HTTPS | Create payment |
-| 5 | payment-service → PostgreSQL | JDBC | Persist payment |
-| 6 | payment-service → account-service | REST/HTTP | Debit request |
-| 10-11 | account-service → PostgreSQL | JDBC | Persist transaction |
-| 14 | payment-service → PostgreSQL | JDBC | Update payment status |
+| Paso | De → A | Protocolo | Propósito |
+|------|--------|-----------|-----------|
+| 2 | Frontend → payment-service | REST/HTTPS | Crear pago |
+| 5 | payment-service → PostgreSQL | JDBC | Persistir pago |
+| 6 | payment-service → account-service | REST/HTTP | Solicitud de débito |
+| 10-11 | account-service → PostgreSQL | JDBC | Persistir transacción |
+| 14 | payment-service → PostgreSQL | JDBC | Actualizar estado del pago |
 
-## Debit Request Contract
+## Contrato de Solicitud de Débito
 
 **Request:**
 ```json
@@ -104,11 +69,11 @@ POST /api/accounts/debit
 }
 ```
 
-## Error Scenarios
+## Escenarios de Error
 
 | Error | Payment Status | Account Status |
 |-------|----------------|----------------|
-| Account not found | FAILED | N/A |
-| Insufficient balance | FAILED | N/A |
-| Service unavailable | FAILED | N/A |
-| Success | COMPLETED | DEBITED |
+| Cuenta no encontrada | FAILED | N/A |
+| Saldo insuficiente | FAILED | N/A |
+| Servicio no disponible | FAILED | N/A |
+| Éxito | COMPLETED | DEBITED |

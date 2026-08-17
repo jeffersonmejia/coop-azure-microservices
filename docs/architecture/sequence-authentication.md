@@ -1,102 +1,55 @@
 # Sequence Diagram — Authentication
 
-## Login Flow
+## 7.1 Login Flow
 
-```
-┌──────┐    ┌─────────┐    ┌──────────────┐    ┌────────────┐
-│ User │    │ Angular │    │ auth-service │    │ PostgreSQL │
-└──┬───┘    └────┬────┘    └──────┬───────┘    └─────┬──────┘
-   │             │                │                   │
-   │  1. login   │                │                   │
-   │  credentials│                │                   │
-   ├────────────►│                │                   │
-   │             │                │                   │
-   │             │  2. POST       │                   │
-   │             │  /auth/login   │                   │
-   │             ├───────────────►│                   │
-   │             │                │                   │
-   │             │                │  3. query user    │
-   │             │                │  by email         │
-   │             │                ├──────────────────►│
-   │             │                │                   │
-   │             │                │  4. user data     │
-   │             │                │◄──────────────────┤
-   │             │                │                   │
-   │             │                │  5. verify        │
-   │             │                │  BCrypt password  │
-   │             │                │                   │
-   │             │                │  6. generate JWT  │
-   │             │                │  (sub, uid, role) │
-   │             │                │                   │
-   │             │  7. JWT token  │                   │
-   │             │◄───────────────┤                   │
-   │             │                │                   │
-   │  8. token   │                │                   │
-   │◄────────────┤                │                   │
-   │             │                │                   │
+```mermaid
+sequenceDiagram
+    actor User as Socio
+    participant Angular as Frontend
+    participant Auth as auth-service
+    participant DB as PostgreSQL
+    
+    User->>Angular: Credenciales de login
+    Angular->>Auth: POST /auth/login
+    Auth->>DB: query user by email
+    DB-->>Auth: user data
+    Auth->>Auth: verify BCrypt password
+    Auth->>Auth: generate JWT (sub, uid, role)
+    Auth-->>Angular: JWT token
+    Angular-->>User: token
 ```
 
-## Register Flow
+## 7.2 Register Flow
 
-```
-┌──────┐    ┌─────────┐    ┌──────────────┐    ┌────────────┐
-│ User │    │ Angular │    │ auth-service │    │ PostgreSQL │
-└──┬───┘    └────┬────┘    └──────┬───────┘    └─────┬──────┘
-   │             │                │                   │
-   │  1. register│                │                   │
-   │  data       │                │                   │
-   ├────────────►│                │                   │
-   │             │                │                   │
-   │             │  2. POST       │                   │
-   │             │  /auth/register                   │
-   │             ├───────────────►│                   │
-   │             │                │                   │
-   │             │                │  3. check email   │
-   │             │                │  uniqueness       │
-   │             │                ├──────────────────►│
-   │             │                │                   │
-   │             │                │  4. hash password │
-   │             │                │  BCrypt           │
-   │             │                │                   │
-   │             │                │  5. insert user   │
-   │             │                ├──────────────────►│
-   │             │                │                   │
-   │             │                │  6. success       │
-   │             │                │◄──────────────────┤
-   │             │                │                   │
-   │             │  7. 201 Created│                   │
-   │             │◄───────────────┤                   │
-   │             │                │                   │
-   │  8. success │                │                   │
-   │◄────────────┤                │                   │
-   │             │                │                   │
+```mermaid
+sequenceDiagram
+    actor User as Socio
+    participant Angular as Frontend
+    participant Auth as auth-service
+    participant DB as PostgreSQL
+    
+    User->>Angular: Datos de registro
+    Angular->>Auth: POST /auth/register
+    Auth->>DB: check email uniqueness
+    Auth->>Auth: hash password BCrypt
+    Auth->>DB: INSERT user
+    DB-->>Auth: success
+    Auth-->>Angular: 201 Created
+    Angular-->>User: success
 ```
 
-## JWT Validation (subsequent requests)
+## 7.3 JWT Validation
 
-```
-┌──────┐    ┌─────────┐    ┌──────────────┐
-│ User │    │ Angular │    │ auth-service │
-└──┬───┘    └────┬────┘    └──────┬───────┘
-   │             │                │
-   │  1. request │                │
-   │  + JWT      │                │
-   ├────────────►│                │
-   │             │                │
-   │             │  2. request    │
-   │             │  + Authorization: Bearer JWT
-   │             ├───────────────►│
-   │             │                │
-   │             │                │  3. JWT Filter
-   │             │                │  validate token
-   │             │                │  extract claims
-   │             │                │
-   │             │                │  4. set CurrentUser
-   │             │                │
-   │             │  5. response   │
-   │             │◄───────────────┤
-   │             │                │
-   │  6. response│                │
-   │◄────────────┤                │
-   │             │                │
+```mermaid
+sequenceDiagram
+    actor User as Socio
+    participant Angular as Frontend
+    participant Auth as auth-service
+    
+    User->>Angular: request + JWT
+    Angular->>Auth: request + Authorization: Bearer JWT
+    Auth->>Auth: JWT Filter validate token
+    Auth->>Auth: extract claims, set CurrentUser
+    Auth-->>Angular: response
+    Angular-->>User: response
 ```
