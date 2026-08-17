@@ -3,17 +3,16 @@ package com.cooperative.payment_service.integration;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -42,8 +41,8 @@ class PaymentIntegrationTest {
         factory.setConnectTimeout(5000);
         factory.setReadTimeout(5000);
         RestTemplate rt = new RestTemplate(factory);
-        ResponseEntity<Void> response = rt.getForEntity(
-                "http://localhost:" + port + "/api/payments", Void.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        String url = "http://localhost:" + port + "/api/payments";
+        assertThatThrownBy(() -> rt.getForEntity(url, Void.class))
+                .isInstanceOf(HttpClientErrorException.Unauthorized.class);
     }
 }
