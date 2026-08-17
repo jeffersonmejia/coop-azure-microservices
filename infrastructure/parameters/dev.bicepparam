@@ -1,6 +1,6 @@
 using '../main.bicep'
 
-param location = 'eastus'
+param location = 'southcentralus'
 param environmentName = 'dev'
 param projectName = 'coop'
 
