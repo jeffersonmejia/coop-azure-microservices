@@ -32,7 +32,8 @@ replay_pid*
 # Local / private files
 # =========================
 
-.local/
+.local/*
+!.local/ejecucion/
 
 .env
 .env.*
