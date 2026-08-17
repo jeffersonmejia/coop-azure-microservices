@@ -82,3 +82,8 @@ application-local.yaml
 
 .DS_Store
 Thumbs.db
+
+# Bicep compiled output
+infrastructure/**/*.json
+!infrastructure/**/package.json
+!infrastructure/**/package-lock.json
