@@ -2,18 +2,26 @@ package com.cooperative.auth_service.integration;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
 @Testcontainers
 class AuthIntegrationTest {
 
@@ -33,88 +41,89 @@ class AuthIntegrationTest {
     }
 
     @Autowired
-    private WebTestClient webTestClient;
+    private MockMvc mockMvc;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void test_register_and_login_flow() {
+    void test_register_and_login_flow() throws Exception {
         Map<String, String> registerBody = Map.of(
                 "email", "newuser@test.com",
                 "password", "password123",
                 "firstName", "John",
                 "lastName", "Doe");
 
-        webTestClient.post().uri("/api/auth/register")
-                .bodyValue(registerBody)
-                .exchange()
-                .expectStatus().isOk();
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerBody)))
+                .andExpect(status().isCreated());
 
         Map<String, String> loginBody = Map.of(
                 "email", "newuser@test.com",
                 "password", "password123");
 
-        webTestClient.post().uri("/api/auth/login")
-                .bodyValue(loginBody)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.accessToken").isNotEmpty();
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginBody)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty());
     }
 
     @Test
-    void test_register_duplicate_returns_409() {
+    void test_register_duplicate_returns_409() throws Exception {
         Map<String, String> body = Map.of(
                 "email", "dup@test.com",
                 "password", "password123",
                 "firstName", "John",
                 "lastName", "Doe");
 
-        webTestClient.post().uri("/api/auth/register")
-                .bodyValue(body)
-                .exchange()
-                .expectStatus().isOk();
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isCreated());
 
-        webTestClient.post().uri("/api/auth/register")
-                .bodyValue(body)
-                .exchange()
-                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isConflict());
     }
 
     @Test
-    void test_me_without_token_returns_401() {
-        webTestClient.get().uri("/api/auth/me")
-                .exchange()
-                .expectStatus().isUnauthorized();
+    void test_me_without_token_returns_401() throws Exception {
+        mockMvc.perform(get("/api/auth/me"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void test_me_with_valid_token_returns_user() {
+    void test_me_with_valid_token_returns_user() throws Exception {
         Map<String, String> registerBody = Map.of(
                 "email", "metest@test.com",
                 "password", "password123",
                 "firstName", "Jane",
                 "lastName", "Smith");
-        webTestClient.post().uri("/api/auth/register")
-                .bodyValue(registerBody)
-                .exchange()
-                .expectStatus().isOk();
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerBody)))
+                .andExpect(status().isCreated());
 
         Map<String, String> loginBody = Map.of(
                 "email", "metest@test.com",
                 "password", "password123");
 
-        String[] tokenHolder = new String[1];
-        webTestClient.post().uri("/api/auth/login")
-                .bodyValue(loginBody)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.accessToken").value(v -> tokenHolder[0] = (String) v);
+        String response = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginBody)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
 
-        webTestClient.get().uri("/api/auth/me")
-                .header("Authorization", "Bearer " + tokenHolder[0])
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.email").isEqualTo("metest@test.com");
+        String token = objectMapper.readTree(response).get("accessToken").asText();
+
+        mockMvc.perform(get("/api/auth/me")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("metest@test.com"));
     }
 }

@@ -34,7 +34,7 @@ class JwtContractTest {
         assertThat(jwt.getSubject()).isNotBlank();
         assertThat((Object) jwt.getClaim("uid")).isNotNull();
         assertThat((Object) jwt.getClaim("role")).isIn("USER", "ADMIN");
-        assertThat(jwt.getIssuer()).isNotNull();
+        assertThat(jwt.getClaimAsString("iss")).isNotBlank();
         assertThat(jwt.getExpiresAt()).isAfter(Instant.now());
         assertThat(jwt.getIssuedAt()).isBeforeOrEqualTo(Instant.now());
     }
@@ -49,7 +49,7 @@ class JwtContractTest {
         String token = jwtService.generateToken(user);
         var jwt = jwtDecoder.decode(token);
 
-        assertThat((Object) jwt.getClaim("uid")).isEqualTo(999);
+        assertThat(jwt.<Long>getClaim("uid")).isEqualTo(999L);
     }
 
     @Test
@@ -62,6 +62,6 @@ class JwtContractTest {
         String token = jwtService.generateToken(user);
         var jwt = jwtDecoder.decode(token);
 
-        assertThat(jwt.getIssuer().toString()).isEqualTo("auth-service");
+        assertThat(jwt.getClaimAsString("iss")).isEqualTo("auth-service");
     }
 }

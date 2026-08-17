@@ -1,0 +1,9 @@
+{
+  "resources": {
+    "includes": [
+      {"pattern": "META-INF/spring/*.imports"},
+      {"pattern": "META-INF/spring-configuration-metadata.json"},
+      {"pattern": "db/migration/.*"}
+    ]
+  }
+}

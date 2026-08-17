@@ -1,0 +1,38 @@
+[
+  {
+    "name": "com.cooperative.payment_service.domain.Payment",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true
+  },
+  {
+    "name": "com.cooperative.payment_service.domain.PaymentStatus",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true
+  },
+  {
+    "name": "com.cooperative.payment_service.web.dto.PaymentResponse",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true
+  },
+  {
+    "name": "com.cooperative.payment_service.web.dto.CreatePaymentRequest",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true
+  },
+  {
+    "name": "com.cooperative.payment_service.client.DebitResponse",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true
+  },
+  {
+    "name": "com.cooperative.payment_service.client.DebitRequest",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true
+  }
+]

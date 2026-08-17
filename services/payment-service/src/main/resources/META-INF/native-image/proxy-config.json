@@ -1,0 +1,17 @@
+{
+  "proxies": [
+    {
+      "interfaces": ["org.springframework.web.client.RestClient"],
+      "methods": [
+        {
+          "name": "post",
+          "parameterTypes": []
+        },
+        {
+          "name": "get",
+          "parameterTypes": []
+        }
+      ]
+    }
+  ]
+}

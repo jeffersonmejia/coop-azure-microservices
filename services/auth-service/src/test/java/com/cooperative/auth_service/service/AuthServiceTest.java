@@ -110,7 +110,6 @@ class AuthServiceTest {
         user.setEnabled(false);
 
         when(userRepository.findByEmailIgnoreCase("user@test.com")).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("password123", "$2a$hashed")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.login(new LoginRequest("user@test.com", "password123")))
                 .isInstanceOf(ResponseStatusException.class)
