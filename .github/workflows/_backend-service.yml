@@ -183,8 +183,16 @@ jobs:
                 "SPRING_DATASOURCE_USERNAME=coopadmin" \
                 "SPRING_DATASOURCE_PASSWORD=${{ secrets.AZURE_DB_PASSWORD }}" \
                 "JWT_SECRET=dev-jwt-secret-change-in-prod"
-            echo "Container app created, waiting for platform to provision..."
-            sleep 30
+            REVISION=$(az containerapp show \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --query "properties.latestRevisionName" -o tsv)
+            echo "Waiting for revision $REVISION to be ready..."
+            az containerapp revision wait \
+              --name "$REVISION" \
+              --app "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --timeout 300
           fi
 
       - name: Health check
@@ -257,8 +265,16 @@ jobs:
                 "SPRING_DATASOURCE_USERNAME=coopadmin" \
                 "SPRING_DATASOURCE_PASSWORD=${{ secrets.AZURE_DB_PASSWORD }}" \
                 "JWT_SECRET=dev-jwt-secret-change-in-prod"
-            echo "Container app created, waiting for platform to provision..."
-            sleep 30
+            REVISION=$(az containerapp show \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --query "properties.latestRevisionName" -o tsv)
+            echo "Waiting for revision $REVISION to be ready..."
+            az containerapp revision wait \
+              --name "$REVISION" \
+              --app "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --timeout 300
           fi
 
       - name: Health check
