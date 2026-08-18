@@ -1,4 +1,4 @@
-FROM gcr.io/distroless/cc-debian12
+FROM debian:bookworm-slim
 ARG SERVICE_NAME
 COPY ${SERVICE_NAME} /app/auth-service
 EXPOSE 8081
