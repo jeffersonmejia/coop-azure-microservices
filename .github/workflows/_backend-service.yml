@@ -207,6 +207,27 @@ jobs:
             exit 1
           fi
 
+      - name: Configure readiness probe
+        run: |
+          cat > /tmp/probe.yaml << EOF
+          properties:
+            template:
+              containers:
+                - name: ${{ inputs.container-app-name }}
+                  probes:
+                    - type: readiness
+                      httpGet:
+                        path: /actuator/health
+                        port: ${{ inputs.server-port }}
+                      initialDelaySeconds: 30
+                      periodSeconds: 15
+                      failureThreshold: 3
+          EOF
+          az containerapp update \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --yaml /tmp/probe.yaml
+
       - name: Health check
         run: |
           APP_FQDN=$(az containerapp show \
@@ -300,6 +321,27 @@ jobs:
             echo "Revision did not reach Provisioned state within timeout"
             exit 1
           fi
+
+      - name: Configure readiness probe
+        run: |
+          cat > /tmp/probe.yaml << EOF
+          properties:
+            template:
+              containers:
+                - name: ${{ inputs.container-app-name }}
+                  probes:
+                    - type: readiness
+                      httpGet:
+                        path: /actuator/health
+                        port: ${{ inputs.server-port }}
+                      initialDelaySeconds: 30
+                      periodSeconds: 15
+                      failureThreshold: 3
+          EOF
+          az containerapp update \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --yaml /tmp/probe.yaml
 
       - name: Health check
         run: |
