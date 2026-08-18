@@ -183,17 +183,17 @@ jobs:
                 "SPRING_DATASOURCE_USERNAME=coopadmin" \
                 "SPRING_DATASOURCE_PASSWORD=${{ secrets.AZURE_DB_PASSWORD }}" \
                 "JWT_SECRET=dev-jwt-secret-change-in-prod"
-            REVISION=$(az containerapp show \
-              --name "${{ inputs.container-app-name }}" \
-              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --query "properties.latestRevisionName" -o tsv)
-            echo "Waiting for revision $REVISION to be ready..."
-            az containerapp revision wait \
-              --name "$REVISION" \
-              --app "${{ inputs.container-app-name }}" \
-              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --timeout 300
           fi
+          REVISION=$(az containerapp show \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --query "properties.latestRevisionName" -o tsv)
+          echo "Waiting for revision $REVISION to be ready..."
+          az containerapp revision wait \
+            --name "$REVISION" \
+            --app "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --timeout 300
 
       - name: Health check
         run: |
@@ -265,17 +265,17 @@ jobs:
                 "SPRING_DATASOURCE_USERNAME=coopadmin" \
                 "SPRING_DATASOURCE_PASSWORD=${{ secrets.AZURE_DB_PASSWORD }}" \
                 "JWT_SECRET=dev-jwt-secret-change-in-prod"
-            REVISION=$(az containerapp show \
-              --name "${{ inputs.container-app-name }}" \
-              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --query "properties.latestRevisionName" -o tsv)
-            echo "Waiting for revision $REVISION to be ready..."
-            az containerapp revision wait \
-              --name "$REVISION" \
-              --app "${{ inputs.container-app-name }}" \
-              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --timeout 300
           fi
+          REVISION=$(az containerapp show \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --query "properties.latestRevisionName" -o tsv)
+          echo "Waiting for revision $REVISION to be ready..."
+          az containerapp revision wait \
+            --name "$REVISION" \
+            --app "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --timeout 300
 
       - name: Health check
         run: |
