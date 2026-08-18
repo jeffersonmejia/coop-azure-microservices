@@ -220,7 +220,7 @@ jobs:
                 "path": "/actuator/health",
                 "port": ($port | tonumber)
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 120,
               "periodSeconds": 15,
               "failureThreshold": 3
             }]
@@ -338,7 +338,7 @@ jobs:
                 "path": "/actuator/health",
                 "port": ($port | tonumber)
               },
-              "initialDelaySeconds": 60,
+              "initialDelaySeconds": 120,
               "periodSeconds": 15,
               "failureThreshold": 3
             }]
