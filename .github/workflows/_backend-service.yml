@@ -78,18 +78,17 @@ jobs:
       - name: Run tests
         run: ./mvnw -B test
 
-  build-and-deploy-staging:
-    name: Build and Deploy Staging - ${{ inputs.service-name }}
+  build:
+    name: Build - ${{ inputs.service-name }}
     needs: test
-    if: inputs.deploy-to == 'staging'
     runs-on: ubuntu-latest
-    environment: staging
     permissions:
-      id-token: write
       contents: read
     defaults:
       run:
         working-directory: ${{ inputs.service-path }}
+    outputs:
+      image-tag: ${{ steps.meta.outputs.image-tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -106,6 +105,7 @@ jobs:
         run: ./mvnw -Pnative native:compile -DskipTests -B
 
       - name: Build Docker image
+        id: meta
         run: |
           cp target/${{ inputs.service-name }} ./${{ inputs.service-name }}-native
           IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}"
@@ -114,6 +114,7 @@ jobs:
             -t "${IMAGE}:${{ github.sha }}" \
             -t "${IMAGE}:staging" \
             .
+          echo "image-tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Azure Login
         uses: azure/login@v2
@@ -131,13 +132,31 @@ jobs:
           docker push "${IMAGE}:${{ github.sha }}"
           docker push "${IMAGE}:staging"
 
-      - name: Deploy to Container Apps - Staging
+  deploy-staging:
+    name: Deploy Staging - ${{ inputs.service-name }}
+    needs: build
+    if: inputs.deploy-to == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Container Apps
         run: |
+          IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ needs.build.outputs.image-tag }}"
           if az containerapp show --name "${{ inputs.container-app-name }}" --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" &>/dev/null; then
             az containerapp update \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --image "${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ github.sha }}"
+              --image "$IMAGE"
           else
             CAE_ID=$(az containerapp env show \
               --name "cae-coop-dev" \
@@ -151,7 +170,7 @@ jobs:
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
               --environment "$CAE_ID" \
-              --image "${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ github.sha }}" \
+              --image "$IMAGE" \
               --ingress external --target-port ${{ inputs.server-port }} --transport http \
               --min-replicas 1 --max-replicas 3 \
               --registry-server "${{ env.AZURE_ACR_NAME }}.azurecr.io" \
@@ -185,43 +204,16 @@ jobs:
           echo "Health check failed after 30 attempts"
           exit 1
 
-  build-and-deploy-production:
-    name: Build and Deploy Production - ${{ inputs.service-name }}
-    needs: test
+  deploy-production:
+    name: Deploy Production - ${{ inputs.service-name }}
+    needs: build
     if: inputs.deploy-to == 'production'
     runs-on: ubuntu-latest
     environment: production
     permissions:
       id-token: write
       contents: read
-    defaults:
-      run:
-        working-directory: ${{ inputs.service-path }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up GraalVM
-        uses: graalvm/setup-graalvm@v1
-        with:
-          version: '25.0'
-          distribution: 'graalvm'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          cache: 'maven'
-
-      - name: Build native image
-        run: ./mvnw -Pnative native:compile -DskipTests -B
-
-      - name: Build Docker image
-        run: |
-          cp target/${{ inputs.service-name }} ./${{ inputs.service-name }}-native
-          IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}"
-          docker build -f Dockerfile.native \
-            --build-arg SERVICE_NAME=${{ inputs.service-name }}-native \
-            -t "${IMAGE}:${{ github.sha }}" \
-            -t "${IMAGE}:production" \
-            .
-
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -229,22 +221,14 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Login to ACR
-        run: az acr login --name ${{ env.AZURE_ACR_NAME }}
-
-      - name: Push Docker image
+      - name: Deploy to Container Apps
         run: |
-          IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}"
-          docker push "${IMAGE}:${{ github.sha }}"
-          docker push "${IMAGE}:production"
-
-      - name: Deploy to Container Apps - Production
-        run: |
+          IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ needs.build.outputs.image-tag }}"
           if az containerapp show --name "${{ inputs.container-app-name }}" --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" &>/dev/null; then
             az containerapp update \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --image "${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ github.sha }}"
+              --image "$IMAGE"
           else
             CAE_ID=$(az containerapp env show \
               --name "cae-coop-dev" \
@@ -258,7 +242,7 @@ jobs:
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
               --environment "$CAE_ID" \
-              --image "${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ github.sha }}" \
+              --image "$IMAGE" \
               --ingress external --target-port ${{ inputs.server-port }} --transport http \
               --min-replicas 1 --max-replicas 3 \
               --registry-server "${{ env.AZURE_ACR_NAME }}.azurecr.io" \
@@ -272,7 +256,7 @@ jobs:
                 "JWT_SECRET=dev-jwt-secret-change-in-prod"
           fi
 
-      - name: Health check - Production
+      - name: Health check
         run: |
           APP_FQDN=$(az containerapp show \
             --name "${{ inputs.container-app-name }}" \
