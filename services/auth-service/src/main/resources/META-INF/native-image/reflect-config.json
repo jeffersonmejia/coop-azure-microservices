@@ -34,5 +34,23 @@
     "allDeclaredConstructors": true,
     "allPublicMethods": true,
     "allPublicFields": true
+  },
+  {
+    "name": "org.flywaydb.core.internal.exception.sqlExceptions.FlywaySqlNoIntegratedAuthException",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true,
+    "methods": [
+      {
+        "name": "isFlywaySpecificVersionOf",
+        "parameterTypes": ["java.sql.SQLException"]
+      }
+    ]
+  },
+  {
+    "name": "org.flywaydb.core.internal.exception.FlywaySqlException",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true
   }
 ]
