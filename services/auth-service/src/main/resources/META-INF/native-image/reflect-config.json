@@ -36,19 +36,31 @@
     "allPublicFields": true
   },
   {
+    "name": "org.flywaydb.core.internal.exception.FlywaySqlException",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true
+  },
+  {
     "name": "org.flywaydb.core.internal.exception.sqlExceptions.FlywaySqlNoIntegratedAuthException",
     "allDeclaredConstructors": true,
     "allPublicMethods": true,
-    "allPublicFields": true,
-    "methods": [
-      {
-        "name": "isFlywaySpecificVersionOf",
-        "parameterTypes": ["java.sql.SQLException"]
-      }
-    ]
+    "allPublicFields": true
   },
   {
-    "name": "org.flywaydb.core.internal.exception.FlywaySqlException",
+    "name": "org.flywaydb.core.internal.exception.sqlExceptions.FlywaySqlNoDriversForInteractiveAuthException",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true
+  },
+  {
+    "name": "org.flywaydb.core.internal.exception.sqlExceptions.FlywaySqlUnableToConnectToDbException",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allPublicFields": true
+  },
+  {
+    "name": "org.flywaydb.core.internal.exception.sqlExceptions.FlywaySqlServerUntrustedCertificateSqlException",
     "allDeclaredConstructors": true,
     "allPublicMethods": true,
     "allPublicFields": true
