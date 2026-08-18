@@ -209,24 +209,27 @@ jobs:
 
       - name: Configure readiness probe
         run: |
-          cat > /tmp/probe.yaml << EOF
-          properties:
-            template:
-              containers:
-                - name: ${{ inputs.container-app-name }}
-                  probes:
-                    - type: readiness
-                      httpGet:
-                        path: /actuator/health
-                        port: ${{ inputs.server-port }}
-                      initialDelaySeconds: 30
-                      periodSeconds: 15
-                      failureThreshold: 3
-          EOF
+          CURRENT=$(az containerapp show \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            -o json)
+          UPDATED=$(echo "$CURRENT" | jq --arg port "${{ inputs.server-port }}" '
+            .properties.template.containers[0].probes = [{
+              "type": "readiness",
+              "httpGet": {
+                "path": "/actuator/health",
+                "port": ($port | tonumber)
+              },
+              "initialDelaySeconds": 60,
+              "periodSeconds": 15,
+              "failureThreshold": 3
+            }]
+          ')
+          echo "$UPDATED" > /tmp/app-update.json
           az containerapp update \
             --name "${{ inputs.container-app-name }}" \
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --yaml /tmp/probe.yaml
+            --yaml /tmp/app-update.json
 
       - name: Health check
         run: |
@@ -324,24 +327,27 @@ jobs:
 
       - name: Configure readiness probe
         run: |
-          cat > /tmp/probe.yaml << EOF
-          properties:
-            template:
-              containers:
-                - name: ${{ inputs.container-app-name }}
-                  probes:
-                    - type: readiness
-                      httpGet:
-                        path: /actuator/health
-                        port: ${{ inputs.server-port }}
-                      initialDelaySeconds: 30
-                      periodSeconds: 15
-                      failureThreshold: 3
-          EOF
+          CURRENT=$(az containerapp show \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            -o json)
+          UPDATED=$(echo "$CURRENT" | jq --arg port "${{ inputs.server-port }}" '
+            .properties.template.containers[0].probes = [{
+              "type": "readiness",
+              "httpGet": {
+                "path": "/actuator/health",
+                "port": ($port | tonumber)
+              },
+              "initialDelaySeconds": 60,
+              "periodSeconds": 15,
+              "failureThreshold": 3
+            }]
+          ')
+          echo "$UPDATED" > /tmp/app-update.json
           az containerapp update \
             --name "${{ inputs.container-app-name }}" \
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --yaml /tmp/probe.yaml
+            --yaml /tmp/app-update.json
 
       - name: Health check
         run: |
