@@ -194,16 +194,16 @@ jobs:
               --revision "$REVISION" \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --query "properties.runningState" -o tsv 2>/dev/null || echo "Unknown")
-            echo "  Revision state: $REVISION_STATE"
-            if [ "$REVISION_STATE" = "Running" ]; then
-              echo "Revision $REVISION is ready"
+              --query "properties.provisioningState" -o tsv 2>/dev/null || echo "Unknown")
+            echo "  Revision provisioning state: $REVISION_STATE"
+            if [ "$REVISION_STATE" = "Provisioned" ]; then
+              echo "Revision $REVISION is provisioned"
               break
             fi
             sleep 10
           done
-          if [ "$REVISION_STATE" != "Running" ]; then
-            echo "Revision did not reach Running state within timeout"
+          if [ "$REVISION_STATE" != "Provisioned" ]; then
+            echo "Revision did not reach Provisioned state within timeout"
             exit 1
           fi
 
@@ -288,16 +288,16 @@ jobs:
               --revision "$REVISION" \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --query "properties.runningState" -o tsv 2>/dev/null || echo "Unknown")
-            echo "  Revision state: $REVISION_STATE"
-            if [ "$REVISION_STATE" = "Running" ]; then
-              echo "Revision $REVISION is ready"
+              --query "properties.provisioningState" -o tsv 2>/dev/null || echo "Unknown")
+            echo "  Revision provisioning state: $REVISION_STATE"
+            if [ "$REVISION_STATE" = "Provisioned" ]; then
+              echo "Revision $REVISION is provisioned"
               break
             fi
             sleep 10
           done
-          if [ "$REVISION_STATE" != "Running" ]; then
-            echo "Revision did not reach Running state within timeout"
+          if [ "$REVISION_STATE" != "Provisioned" ]; then
+            echo "Revision did not reach Provisioned state within timeout"
             exit 1
           fi
 
