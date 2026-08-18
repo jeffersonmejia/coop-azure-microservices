@@ -189,11 +189,23 @@ jobs:
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
             --query "properties.latestRevisionName" -o tsv)
           echo "Waiting for revision $REVISION to be ready..."
-          az containerapp revision wait \
-            --name "$REVISION" \
-            --app "${{ inputs.container-app-name }}" \
-            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --timeout 300
+          for i in $(seq 1 30); do
+            REVISION_STATE=$(az containerapp revision show \
+              --revision "$REVISION" \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --query "properties.runningState" -o tsv 2>/dev/null || echo "Unknown")
+            echo "  Revision state: $REVISION_STATE"
+            if [ "$REVISION_STATE" = "Running" ]; then
+              echo "Revision $REVISION is ready"
+              break
+            fi
+            sleep 10
+          done
+          if [ "$REVISION_STATE" != "Running" ]; then
+            echo "Revision did not reach Running state within timeout"
+            exit 1
+          fi
 
       - name: Health check
         run: |
@@ -271,11 +283,23 @@ jobs:
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
             --query "properties.latestRevisionName" -o tsv)
           echo "Waiting for revision $REVISION to be ready..."
-          az containerapp revision wait \
-            --name "$REVISION" \
-            --app "${{ inputs.container-app-name }}" \
-            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --timeout 300
+          for i in $(seq 1 30); do
+            REVISION_STATE=$(az containerapp revision show \
+              --revision "$REVISION" \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --query "properties.runningState" -o tsv 2>/dev/null || echo "Unknown")
+            echo "  Revision state: $REVISION_STATE"
+            if [ "$REVISION_STATE" = "Running" ]; then
+              echo "Revision $REVISION is ready"
+              break
+            fi
+            sleep 10
+          done
+          if [ "$REVISION_STATE" != "Running" ]; then
+            echo "Revision did not reach Running state within timeout"
+            exit 1
+          fi
 
       - name: Health check
         run: |
