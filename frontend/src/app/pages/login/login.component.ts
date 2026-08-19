@@ -199,7 +199,7 @@ import { AuthService } from '../../services/auth.service';
     }
 
     .switch-text a {
-      color: var(--coop-green-600);
+      color: var(--coop-green-800);
       text-decoration: none;
       font-weight: 500;
     }

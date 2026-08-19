@@ -42,7 +42,7 @@ import { Component } from '@angular/core';
     }
 
     .footer-dev a {
-      color: var(--coop-accent);
+      color: var(--coop-green-800);
       text-decoration: none;
       font-weight: 500;
     }
