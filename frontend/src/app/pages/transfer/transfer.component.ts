@@ -1,11 +1,12 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Router } from '@angular/router';
 import { AccountService } from '../../services/account.service';
 import { NavBarComponent } from '../../components/nav-bar.component';
 
@@ -16,24 +17,30 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
+    MatProgressSpinnerModule,
     NavBarComponent,
   ],
   template: `
     <app-nav-bar />
     <div class="page">
+      <div class="transfer-header">
+        <div class="transfer-text">
+          <h1 class="page-header">Transferencia</h1>
+          <p class="transfer-sub">Envía dinero a otra cuenta de forma segura</p>
+        </div>
+        <img src="vector/account.svg" alt="Transferencia" class="transfer-illustration" />
+      </div>
       <mat-card>
-        <mat-card-header>
-          <mat-card-title>Transferencia</mat-card-title>
-          <mat-card-subtitle>Envía dinero a otra cuenta</mat-card-subtitle>
-        </mat-card-header>
         <mat-card-content>
           <form (ngSubmit)="submit()">
-            <mat-form-field>
+            <mat-form-field appearance="outline">
               <mat-label>Cuenta destino</mat-label>
               <input matInput name="destination" [(ngModel)]="destination" required />
+              <mat-icon matPrefix>account_balance</mat-icon>
             </mat-form-field>
-            <mat-form-field>
+            <mat-form-field appearance="outline">
               <mat-label>Monto</mat-label>
               <input
                 matInput
@@ -44,14 +51,22 @@ import { NavBarComponent } from '../../components/nav-bar.component';
                 [(ngModel)]="amount"
                 required
               />
+              <mat-icon matPrefix>attach_money</mat-icon>
             </mat-form-field>
             <button
               mat-flat-button
               type="submit"
               color="primary"
-              [disabled]="submitting"
+              [disabled]="submitting()"
+              class="submit-btn"
             >
-              Transferir
+              @if (submitting()) {
+                <mat-spinner [diameter]="20" class="btn-spinner"></mat-spinner>
+                <span>Procesando...</span>
+              } @else {
+                <mat-icon>send</mat-icon>
+                <span>Transferir</span>
+              }
             </button>
           </form>
         </mat-card-content>
@@ -59,30 +74,63 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     </div>
   `,
   styles: `
+    .transfer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .transfer-text {
+      flex: 1;
+    }
+
+    .transfer-sub {
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .transfer-illustration {
+      width: 140px;
+      height: auto;
+      margin-left: 24px;
+    }
+
     mat-card {
       max-width: 480px;
-      margin: 32px auto;
       padding: 24px;
+    }
+
+    .submit-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      height: 48px;
+    }
+
+    .btn-spinner {
+      display: inline-block;
     }
   `,
 })
 export class TransferComponent {
   destination = '';
   amount: number | null = null;
-  submitting = false;
+  submitting = signal(false);
 
   private readonly accountService = inject(AccountService);
-  private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
 
   submit(): void {
     if (!this.destination || !this.amount) {
       return;
     }
-    this.submitting = true;
+    this.submitting.set(true);
     this.accountService.transfer(this.destination, this.amount).subscribe({
       next: () => {
-        this.submitting = false;
+        this.submitting.set(false);
         this.snackBar.open('Transferencia realizada con éxito', 'Cerrar', {
           duration: 4000,
         });
@@ -90,7 +138,7 @@ export class TransferComponent {
         this.amount = null;
       },
       error: () => {
-        this.submitting = false;
+        this.submitting.set(false);
         this.snackBar.open('No se pudo realizar la transferencia', 'Cerrar', {
           duration: 4000,
         });

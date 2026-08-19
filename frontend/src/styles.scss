@@ -4,8 +4,8 @@ $theme: mat.define-theme(
   (
     color: (
       theme-type: light,
-      primary: mat.$violet-palette,
-      tertiary: mat.$rose-palette,
+      primary: mat.$green-palette,
+      tertiary: mat.$cyan-palette,
     ),
   )
 );
@@ -23,7 +23,7 @@ body {
 
 body {
   font-family: Roboto, 'Helvetica Neue', sans-serif;
-  background: linear-gradient(180deg, #f3edfa 0%, #fdf6f4 100%);
+  background: linear-gradient(160deg, #e8f5e9 0%, #f1f8e9 40%, #ffffff 100%);
 }
 
 .page {

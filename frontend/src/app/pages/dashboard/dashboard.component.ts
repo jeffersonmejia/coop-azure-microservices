@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -21,6 +22,7 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatProgressSpinnerModule,
     NavBarComponent,
@@ -28,14 +30,22 @@ import { NavBarComponent } from '../../components/nav-bar.component';
   template: `
     <app-nav-bar />
     <div class="page">
-      <h1 class="page-header">Hola, {{ user?.firstName }}</h1>
+      <div class="welcome-section">
+        <div class="welcome-text">
+          <h1 class="page-header">Hola, {{ user?.firstName }}</h1>
+          <p class="welcome-sub">Bienvenido a tu cooperativa</p>
+        </div>
+        <img src="vector/payments.svg" alt="Pagos" class="welcome-illustration" />
+      </div>
 
       @if (loadingAccounts) {
-        <mat-spinner [diameter]="32" />
+        <div class="loading-wrap">
+          <mat-spinner [diameter]="32" />
+        </div>
       } @else if (account) {
         <mat-card class="account-card">
           <mat-card-header>
-            <mat-card-title>{{ account.accountNumber }}</mat-card-title>
+            <mat-card-title class="account-number">{{ account.accountNumber }}</mat-card-title>
             <mat-card-subtitle>Cuenta {{ account.status }}</mat-card-subtitle>
           </mat-card-header>
           <mat-card-content>
@@ -53,11 +63,11 @@ import { NavBarComponent } from '../../components/nav-bar.component';
         </mat-card-header>
         <mat-card-content>
           <form (ngSubmit)="pay()">
-            <mat-form-field>
+            <mat-form-field appearance="outline">
               <mat-label>Cuenta destino</mat-label>
               <input matInput name="paymentAccount" [(ngModel)]="paymentAccount" required />
             </mat-form-field>
-            <mat-form-field>
+            <mat-form-field appearance="outline">
               <mat-label>Monto</mat-label>
               <input
                 matInput
@@ -69,7 +79,7 @@ import { NavBarComponent } from '../../components/nav-bar.component';
                 required
               />
             </mat-form-field>
-            <mat-form-field>
+            <mat-form-field appearance="outline">
               <mat-label>Descripción</mat-label>
               <input matInput name="paymentDescription" [(ngModel)]="paymentDescription" />
             </mat-form-field>
@@ -78,8 +88,15 @@ import { NavBarComponent } from '../../components/nav-bar.component';
               type="submit"
               color="primary"
               [disabled]="paying"
+              class="submit-btn"
             >
-              Pagar
+              @if (paying) {
+                <mat-spinner [diameter]="20" class="btn-spinner"></mat-spinner>
+                <span>Procesando...</span>
+              } @else {
+                <mat-icon>payment</mat-icon>
+                <span>Pagar</span>
+              }
             </button>
           </form>
         </mat-card-content>
@@ -87,23 +104,70 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     </div>
   `,
   styles: `
+    .welcome-section {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .welcome-text {
+      flex: 1;
+    }
+
+    .welcome-sub {
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .welcome-illustration {
+      width: 160px;
+      height: auto;
+      margin-left: 24px;
+    }
+
+    .loading-wrap {
+      display: flex;
+      justify-content: center;
+      padding: 40px;
+    }
+
     .account-card {
       margin-bottom: 24px;
     }
 
+    .account-number {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
     .balance {
-      color: #6b5a85;
+      color: #666;
+      font-size: 14px;
     }
 
     .balance-value {
       font-size: 40px;
       font-weight: 500;
       margin-top: 8px;
-      color: #5e3fa8;
+      color: #2e7d32;
     }
 
     .pay-card {
       margin-bottom: 24px;
+    }
+
+    .submit-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      height: 48px;
+    }
+
+    .btn-spinner {
+      display: inline-block;
     }
   `,
 })
