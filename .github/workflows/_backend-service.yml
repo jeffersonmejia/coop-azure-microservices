@@ -28,6 +28,7 @@ on:
         required: false
         type: string
         default: 'staging'
+
     secrets:
       AZURE_CLIENT_ID:
         required: true
@@ -43,27 +44,39 @@ env:
   AZURE_ACR_NAME: acrcoopdev
 
 jobs:
+
+  # ==========================================================
+  # TEST
+  # ==========================================================
+
   test:
     name: Tests - ${{ inputs.service-name }}
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:16-alpine
+
         env:
           POSTGRES_DB: coop
           POSTGRES_USER: coop
           POSTGRES_PASSWORD: coop
+
         ports:
           - 5432:5432
+
         options: >-
           --health-cmd "pg_isready -U coop -d coop"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
     defaults:
       run:
         working-directory: ${{ inputs.service-path }}
+
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -78,19 +91,29 @@ jobs:
       - name: Run tests
         run: ./mvnw -B test
 
+
+  # ==========================================================
+  # BUILD
+  # ==========================================================
+
   build:
     name: Build - ${{ inputs.service-name }}
     needs: test
     runs-on: ubuntu-latest
+
     permissions:
       id-token: write
       contents: read
+
     defaults:
       run:
         working-directory: ${{ inputs.service-path }}
+
     outputs:
       image-tag: ${{ steps.meta.outputs.image-tag }}
+
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -109,12 +132,16 @@ jobs:
         id: meta
         run: |
           cp target/${{ inputs.service-name }} ./${{ inputs.service-name }}-native
+
           IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}"
-          docker build -f Dockerfile.native \
+
+          docker build \
+            -f Dockerfile.native \
             --build-arg SERVICE_NAME=${{ inputs.service-name }}-native \
             -t "${IMAGE}:${{ github.sha }}" \
             -t "${IMAGE}:staging" \
             .
+
           echo "image-tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Azure Login
@@ -125,24 +152,42 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Login to ACR
-        run: az acr login --name ${{ env.AZURE_ACR_NAME }}
+        run: |
+          az acr login \
+            --name ${{ env.AZURE_ACR_NAME }}
 
       - name: Push Docker image
         run: |
           IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}"
+
           docker push "${IMAGE}:${{ github.sha }}"
           docker push "${IMAGE}:staging"
+
+
+  # ==========================================================
+  # STAGING
+  # ==========================================================
 
   deploy-staging:
     name: Deploy Staging - ${{ inputs.service-name }}
     needs: build
+
     if: inputs.deploy-to == 'staging'
+
     runs-on: ubuntu-latest
+
     environment: staging
+
     permissions:
       id-token: write
       contents: read
+
     steps:
+
+      # ------------------------------------------------------
+      # Azure login
+      # ------------------------------------------------------
+
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -150,30 +195,57 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      # ------------------------------------------------------
+      # Deploy image
+      # ------------------------------------------------------
+
       - name: Deploy to Container Apps
         run: |
+          set -euo pipefail
+
           IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ needs.build.outputs.image-tag }}"
-          if az containerapp show --name "${{ inputs.container-app-name }}" --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" &>/dev/null; then
+
+          echo "Deploying image:"
+          echo "$IMAGE"
+
+          if az containerapp show \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              &>/dev/null; then
+
+            echo "Container App already exists. Updating image..."
+
             az containerapp update \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
               --image "$IMAGE"
+
           else
+
+            echo "Container App does not exist. Creating..."
+
             CAE_ID=$(az containerapp env show \
               --name "cae-coop-dev" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --query "id" -o tsv)
+              --query "id" \
+              -o tsv)
+
             IDENTITY_ID=$(az identity show \
               --name "id-coop-dev-acr-pull" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --query "id" -o tsv)
+              --query "id" \
+              -o tsv)
+
             az containerapp create \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
               --environment "$CAE_ID" \
               --image "$IMAGE" \
-              --ingress external --target-port ${{ inputs.server-port }} --transport http \
-              --min-replicas 1 --max-replicas 3 \
+              --ingress external \
+              --target-port ${{ inputs.server-port }} \
+              --transport http \
+              --min-replicas 1 \
+              --max-replicas 3 \
               --registry-server "${{ env.AZURE_ACR_NAME }}.azurecr.io" \
               --registry-identity "$IDENTITY_ID" \
               --user-assigned "$IDENTITY_ID" \
@@ -183,84 +255,308 @@ jobs:
                 "SPRING_DATASOURCE_USERNAME=coopadmin" \
                 "SPRING_DATASOURCE_PASSWORD=${{ secrets.AZURE_DB_PASSWORD }}" \
                 "JWT_SECRET=dev-jwt-secret-change-in-prod"
+
           fi
+
+      # ------------------------------------------------------
+      # Wait for image revision to exist
+      # ------------------------------------------------------
+
+      - name: Wait for deployment revision
+        run: |
+          set -euo pipefail
+
           REVISION=$(az containerapp show \
             --name "${{ inputs.container-app-name }}" \
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --query "properties.latestRevisionName" -o tsv)
-          echo "Waiting for revision $REVISION to be ready..."
+            --query "properties.latestRevisionName" \
+            -o tsv)
+
+          echo "Initial deployment revision: $REVISION"
+
           for i in $(seq 1 30); do
-            REVISION_STATE=$(az containerapp revision show \
+
+            PROVISIONING_STATE=$(az containerapp revision show \
               --revision "$REVISION" \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --query "properties.provisioningState" -o tsv 2>/dev/null || echo "Unknown")
-            echo "  Revision provisioning state: $REVISION_STATE"
-            if [ "$REVISION_STATE" = "Provisioned" ]; then
-              echo "Revision $REVISION is provisioned"
+              --query "properties.provisioningState" \
+              -o tsv 2>/dev/null || echo "Unknown")
+
+            echo "Attempt $i/30 - provisioningState=$PROVISIONING_STATE"
+
+            if [ "$PROVISIONING_STATE" = "Provisioned" ]; then
+              echo "Initial revision provisioned."
               break
             fi
+
+            if [ "$PROVISIONING_STATE" = "Failed" ]; then
+              echo "Azure reported a failed revision."
+              az containerapp revision show \
+                --revision "$REVISION" \
+                --name "${{ inputs.container-app-name }}" \
+                --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+                -o json
+              exit 1
+            fi
+
             sleep 10
+
           done
-          if [ "$REVISION_STATE" != "Provisioned" ]; then
-            echo "Revision did not reach Provisioned state within timeout"
+
+          if [ "$PROVISIONING_STATE" != "Provisioned" ]; then
+            echo "Initial revision was not provisioned within timeout."
             exit 1
           fi
 
-      - name: Configure readiness probe
+      # ------------------------------------------------------
+      # Configure probes
+      #
+      # Startup  -> TCP
+      # Readiness -> HTTP /actuator/health
+      # Liveness -> TCP
+      #
+      # Important:
+      # modifying probes can create another revision.
+      # ------------------------------------------------------
+
+      - name: Configure health probes
         run: |
+          set -euo pipefail
+
+          echo "Configuring Startup, Readiness and Liveness probes..."
+
           CURRENT=$(az containerapp show \
             --name "${{ inputs.container-app-name }}" \
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
             -o json)
-          UPDATED=$(echo "$CURRENT" | jq --arg port "${{ inputs.server-port }}" '
-            .properties.template.containers[0].probes = [{
-              "type": "readiness",
-              "httpGet": {
-                "path": "/actuator/health",
-                "port": ($port | tonumber)
+
+          UPDATED=$(echo "$CURRENT" | jq \
+            --arg port "${{ inputs.server-port }}" \
+            '
+            .properties.template.containers[0].probes = [
+
+              {
+                "type": "Startup",
+                "tcpSocket": {
+                  "port": ($port | tonumber)
+                },
+                "initialDelaySeconds": 10,
+                "periodSeconds": 30,
+                "timeoutSeconds": 5,
+                "failureThreshold": 10,
+                "successThreshold": 1
               },
-              "initialDelaySeconds": 60,
-              "periodSeconds": 15,
-              "failureThreshold": 3
-            }]
-          ')
+
+              {
+                "type": "Readiness",
+                "httpGet": {
+                  "path": "/actuator/health",
+                  "port": ($port | tonumber)
+                },
+                "initialDelaySeconds": 10,
+                "periodSeconds": 30,
+                "timeoutSeconds": 10,
+                "failureThreshold": 10,
+                "successThreshold": 1
+              },
+
+              {
+                "type": "Liveness",
+                "tcpSocket": {
+                  "port": ($port | tonumber)
+                },
+                "initialDelaySeconds": 60,
+                "periodSeconds": 30,
+                "timeoutSeconds": 5,
+                "failureThreshold": 3,
+                "successThreshold": 1
+              }
+
+            ]
+            ')
+
           echo "$UPDATED" > /tmp/app-update.json
+
           az containerapp update \
             --name "${{ inputs.container-app-name }}" \
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
             --yaml /tmp/app-update.json
 
+      # ------------------------------------------------------
+      # CRITICAL FIX
+      #
+      # Re-read latestRevisionName AFTER configuring probes.
+      # This is the revision we actually need to validate.
+      # ------------------------------------------------------
+
+      - name: Wait for final healthy revision
+        run: |
+          set -euo pipefail
+
+          sleep 5
+
+          FINAL_REVISION=$(az containerapp show \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --query "properties.latestRevisionName" \
+            -o tsv)
+
+          echo "Final revision with health probes: $FINAL_REVISION"
+          echo "Waiting until Azure reports the revision as Healthy..."
+
+          FINAL_PROVISIONING_STATE="Unknown"
+          HEALTH_STATE="None"
+
+          for i in $(seq 1 60); do
+
+            FINAL_PROVISIONING_STATE=$(az containerapp revision show \
+              --revision "$FINAL_REVISION" \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --query "properties.provisioningState" \
+              -o tsv 2>/dev/null || echo "Unknown")
+
+            HEALTH_STATE=$(az containerapp revision show \
+              --revision "$FINAL_REVISION" \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --query "properties.healthState" \
+              -o tsv 2>/dev/null || echo "None")
+
+            REPLICAS=$(az containerapp revision show \
+              --revision "$FINAL_REVISION" \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --query "properties.replicas" \
+              -o tsv 2>/dev/null || echo "0")
+
+            echo "Attempt $i/60 - provisioning=$FINAL_PROVISIONING_STATE health=$HEALTH_STATE replicas=$REPLICAS"
+
+            if [ "$FINAL_PROVISIONING_STATE" = "Failed" ]; then
+
+              echo "Final revision provisioning failed."
+
+              az containerapp revision show \
+                --revision "$FINAL_REVISION" \
+                --name "${{ inputs.container-app-name }}" \
+                --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+                -o json
+
+              exit 1
+
+            fi
+
+            if [ "$FINAL_PROVISIONING_STATE" = "Provisioned" ] && \
+               [ "$HEALTH_STATE" = "Healthy" ]; then
+
+              echo "Final revision is Provisioned and Healthy."
+              break
+
+            fi
+
+            sleep 10
+
+          done
+
+          if [ "$FINAL_PROVISIONING_STATE" != "Provisioned" ] || \
+             [ "$HEALTH_STATE" != "Healthy" ]; then
+
+            echo "Final revision did not become healthy within timeout."
+
+            echo "Final Azure revision information:"
+
+            az containerapp revision show \
+              --revision "$FINAL_REVISION" \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              -o json || true
+
+            exit 1
+
+          fi
+
+      # ------------------------------------------------------
+      # External HTTP verification
+      # ------------------------------------------------------
+
       - name: Health check
         run: |
+          set -euo pipefail
+
           APP_FQDN=$(az containerapp show \
             --name "${{ inputs.container-app-name }}" \
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
             --query "properties.configuration.ingress.fqdn" \
             -o tsv)
-          echo "Waiting for ${{ inputs.service-name }} to be ready..."
-          for i in $(seq 1 30); do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${APP_FQDN}/actuator/health" || true)
+
+          HEALTH_URL="https://${APP_FQDN}/actuator/health"
+
+          echo "External health URL:"
+          echo "$HEALTH_URL"
+
+          for i in $(seq 1 18); do
+
+            HTTP_STATUS=$(curl \
+              --connect-timeout 10 \
+              --max-time 20 \
+              -s \
+              -o /tmp/health-response.json \
+              -w "%{http_code}" \
+              "$HEALTH_URL" || true)
+
+            echo "Attempt $i/18 - HTTP $HTTP_STATUS"
+
             if [ "$HTTP_STATUS" = "200" ]; then
-              echo "Health check passed"
+
+              echo "Health check passed."
+
+              cat /tmp/health-response.json || true
+              echo
+
               exit 0
+
             fi
-            echo "Attempt $i/30 - HTTP $HTTP_STATUS"
+
+            if [ -f /tmp/health-response.json ]; then
+              echo "Response:"
+              cat /tmp/health-response.json || true
+              echo
+            fi
+
             sleep 10
+
           done
-          echo "Health check failed after 30 attempts"
+
+          echo "External health check failed."
+
           exit 1
+
+
+  # ==========================================================
+  # PRODUCTION
+  # ==========================================================
 
   deploy-production:
     name: Deploy Production - ${{ inputs.service-name }}
     needs: build
+
     if: inputs.deploy-to == 'production'
+
     runs-on: ubuntu-latest
+
     environment: production
+
     permissions:
       id-token: write
       contents: read
+
     steps:
+
+      # ------------------------------------------------------
+      # Azure login
+      # ------------------------------------------------------
+
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -268,30 +564,57 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      # ------------------------------------------------------
+      # Deploy image
+      # ------------------------------------------------------
+
       - name: Deploy to Container Apps
         run: |
+          set -euo pipefail
+
           IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}:${{ needs.build.outputs.image-tag }}"
-          if az containerapp show --name "${{ inputs.container-app-name }}" --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" &>/dev/null; then
+
+          echo "Deploying image:"
+          echo "$IMAGE"
+
+          if az containerapp show \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              &>/dev/null; then
+
+            echo "Container App already exists. Updating image..."
+
             az containerapp update \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
               --image "$IMAGE"
+
           else
+
+            echo "Container App does not exist. Creating..."
+
             CAE_ID=$(az containerapp env show \
               --name "cae-coop-dev" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --query "id" -o tsv)
+              --query "id" \
+              -o tsv)
+
             IDENTITY_ID=$(az identity show \
               --name "id-coop-dev-acr-pull" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --query "id" -o tsv)
+              --query "id" \
+              -o tsv)
+
             az containerapp create \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
               --environment "$CAE_ID" \
               --image "$IMAGE" \
-              --ingress external --target-port ${{ inputs.server-port }} --transport http \
-              --min-replicas 1 --max-replicas 3 \
+              --ingress external \
+              --target-port ${{ inputs.server-port }} \
+              --transport http \
+              --min-replicas 1 \
+              --max-replicas 3 \
               --registry-server "${{ env.AZURE_ACR_NAME }}.azurecr.io" \
               --registry-identity "$IDENTITY_ID" \
               --user-assigned "$IDENTITY_ID" \
@@ -301,70 +624,271 @@ jobs:
                 "SPRING_DATASOURCE_USERNAME=coopadmin" \
                 "SPRING_DATASOURCE_PASSWORD=${{ secrets.AZURE_DB_PASSWORD }}" \
                 "JWT_SECRET=dev-jwt-secret-change-in-prod"
+
           fi
+
+      # ------------------------------------------------------
+      # Wait for image revision
+      # ------------------------------------------------------
+
+      - name: Wait for deployment revision
+        run: |
+          set -euo pipefail
+
           REVISION=$(az containerapp show \
             --name "${{ inputs.container-app-name }}" \
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --query "properties.latestRevisionName" -o tsv)
-          echo "Waiting for revision $REVISION to be ready..."
+            --query "properties.latestRevisionName" \
+            -o tsv)
+
+          echo "Initial production revision: $REVISION"
+
           for i in $(seq 1 30); do
-            REVISION_STATE=$(az containerapp revision show \
+
+            PROVISIONING_STATE=$(az containerapp revision show \
               --revision "$REVISION" \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --query "properties.provisioningState" -o tsv 2>/dev/null || echo "Unknown")
-            echo "  Revision provisioning state: $REVISION_STATE"
-            if [ "$REVISION_STATE" = "Provisioned" ]; then
-              echo "Revision $REVISION is provisioned"
+              --query "properties.provisioningState" \
+              -o tsv 2>/dev/null || echo "Unknown")
+
+            echo "Attempt $i/30 - provisioningState=$PROVISIONING_STATE"
+
+            if [ "$PROVISIONING_STATE" = "Provisioned" ]; then
+              echo "Initial production revision provisioned."
               break
             fi
+
+            if [ "$PROVISIONING_STATE" = "Failed" ]; then
+
+              echo "Azure reported a failed revision."
+
+              az containerapp revision show \
+                --revision "$REVISION" \
+                --name "${{ inputs.container-app-name }}" \
+                --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+                -o json
+
+              exit 1
+
+            fi
+
             sleep 10
+
           done
-          if [ "$REVISION_STATE" != "Provisioned" ]; then
-            echo "Revision did not reach Provisioned state within timeout"
+
+          if [ "$PROVISIONING_STATE" != "Provisioned" ]; then
+            echo "Initial production revision was not provisioned within timeout."
             exit 1
           fi
 
-      - name: Configure readiness probe
+      # ------------------------------------------------------
+      # Configure probes
+      # ------------------------------------------------------
+
+      - name: Configure health probes
         run: |
+          set -euo pipefail
+
+          echo "Configuring Startup, Readiness and Liveness probes..."
+
           CURRENT=$(az containerapp show \
             --name "${{ inputs.container-app-name }}" \
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
             -o json)
-          UPDATED=$(echo "$CURRENT" | jq --arg port "${{ inputs.server-port }}" '
-            .properties.template.containers[0].probes = [{
-              "type": "readiness",
-              "httpGet": {
-                "path": "/actuator/health",
-                "port": ($port | tonumber)
+
+          UPDATED=$(echo "$CURRENT" | jq \
+            --arg port "${{ inputs.server-port }}" \
+            '
+            .properties.template.containers[0].probes = [
+
+              {
+                "type": "Startup",
+                "tcpSocket": {
+                  "port": ($port | tonumber)
+                },
+                "initialDelaySeconds": 10,
+                "periodSeconds": 30,
+                "timeoutSeconds": 5,
+                "failureThreshold": 10,
+                "successThreshold": 1
               },
-              "initialDelaySeconds": 60,
-              "periodSeconds": 15,
-              "failureThreshold": 3
-            }]
-          ')
+
+              {
+                "type": "Readiness",
+                "httpGet": {
+                  "path": "/actuator/health",
+                  "port": ($port | tonumber)
+                },
+                "initialDelaySeconds": 10,
+                "periodSeconds": 30,
+                "timeoutSeconds": 10,
+                "failureThreshold": 10,
+                "successThreshold": 1
+              },
+
+              {
+                "type": "Liveness",
+                "tcpSocket": {
+                  "port": ($port | tonumber)
+                },
+                "initialDelaySeconds": 60,
+                "periodSeconds": 30,
+                "timeoutSeconds": 5,
+                "failureThreshold": 3,
+                "successThreshold": 1
+              }
+
+            ]
+            ')
+
           echo "$UPDATED" > /tmp/app-update.json
+
           az containerapp update \
             --name "${{ inputs.container-app-name }}" \
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
             --yaml /tmp/app-update.json
 
+      # ------------------------------------------------------
+      # Wait for FINAL revision
+      # ------------------------------------------------------
+
+      - name: Wait for final healthy revision
+        run: |
+          set -euo pipefail
+
+          sleep 5
+
+          FINAL_REVISION=$(az containerapp show \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --query "properties.latestRevisionName" \
+            -o tsv)
+
+          echo "Final production revision: $FINAL_REVISION"
+          echo "Waiting until Azure reports the revision as Healthy..."
+
+          FINAL_PROVISIONING_STATE="Unknown"
+          HEALTH_STATE="None"
+
+          for i in $(seq 1 60); do
+
+            FINAL_PROVISIONING_STATE=$(az containerapp revision show \
+              --revision "$FINAL_REVISION" \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --query "properties.provisioningState" \
+              -o tsv 2>/dev/null || echo "Unknown")
+
+            HEALTH_STATE=$(az containerapp revision show \
+              --revision "$FINAL_REVISION" \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --query "properties.healthState" \
+              -o tsv 2>/dev/null || echo "None")
+
+            REPLICAS=$(az containerapp revision show \
+              --revision "$FINAL_REVISION" \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              --query "properties.replicas" \
+              -o tsv 2>/dev/null || echo "0")
+
+            echo "Attempt $i/60 - provisioning=$FINAL_PROVISIONING_STATE health=$HEALTH_STATE replicas=$REPLICAS"
+
+            if [ "$FINAL_PROVISIONING_STATE" = "Failed" ]; then
+
+              echo "Final production revision provisioning failed."
+
+              az containerapp revision show \
+                --revision "$FINAL_REVISION" \
+                --name "${{ inputs.container-app-name }}" \
+                --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+                -o json
+
+              exit 1
+
+            fi
+
+            if [ "$FINAL_PROVISIONING_STATE" = "Provisioned" ] && \
+               [ "$HEALTH_STATE" = "Healthy" ]; then
+
+              echo "Final production revision is Provisioned and Healthy."
+              break
+
+            fi
+
+            sleep 10
+
+          done
+
+          if [ "$FINAL_PROVISIONING_STATE" != "Provisioned" ] || \
+             [ "$HEALTH_STATE" != "Healthy" ]; then
+
+            echo "Final production revision did not become healthy within timeout."
+
+            az containerapp revision show \
+              --revision "$FINAL_REVISION" \
+              --name "${{ inputs.container-app-name }}" \
+              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+              -o json || true
+
+            exit 1
+
+          fi
+
+      # ------------------------------------------------------
+      # External HTTP verification
+      # ------------------------------------------------------
+
       - name: Health check
         run: |
+          set -euo pipefail
+
           APP_FQDN=$(az containerapp show \
             --name "${{ inputs.container-app-name }}" \
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
             --query "properties.configuration.ingress.fqdn" \
             -o tsv)
-          echo "Waiting for ${{ inputs.service-name }} in production..."
-          for i in $(seq 1 30); do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://${APP_FQDN}/actuator/health" || true)
+
+          HEALTH_URL="https://${APP_FQDN}/actuator/health"
+
+          echo "External health URL:"
+          echo "$HEALTH_URL"
+
+          for i in $(seq 1 18); do
+
+            HTTP_STATUS=$(curl \
+              --connect-timeout 10 \
+              --max-time 20 \
+              -s \
+              -o /tmp/health-response.json \
+              -w "%{http_code}" \
+              "$HEALTH_URL" || true)
+
+            echo "Attempt $i/18 - HTTP $HTTP_STATUS"
+
             if [ "$HTTP_STATUS" = "200" ]; then
-              echo "Health check passed"
+
+              echo "Production health check passed."
+
+              cat /tmp/health-response.json || true
+              echo
+
               exit 0
+
             fi
-            echo "Attempt $i/30 - HTTP $HTTP_STATUS"
+
+            if [ -f /tmp/health-response.json ]; then
+              echo "Response:"
+              cat /tmp/health-response.json || true
+              echo
+            fi
+
             sleep 10
+
           done
-          echo "Health check failed after 30 attempts"
+
+          echo "Production external health check failed."
+
           exit 1
