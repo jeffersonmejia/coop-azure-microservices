@@ -124,7 +124,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy-only: set image-tag and skip build
+      - name: 'Deploy-only: set image-tag and skip build'
         if: ${{ inputs.deploy_only == true }}
         run: |
           echo "deploy_only requested; skipping full build and using staging tag"
