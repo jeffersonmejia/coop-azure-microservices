@@ -223,6 +223,26 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Verify ACR tag exists
+        run: |
+          set -euo pipefail
+          TAG="${{ needs.build.outputs.image-tag }}"
+          if [ -z "$TAG" ]; then
+            echo "image-tag is empty; failing fast to avoid deploying empty image"
+            exit 1
+          fi
+          REPO="${{ inputs.docker-image-name }}"
+          ACR="${{ env.AZURE_ACR_NAME }}"
+          echo "Checking ACR $ACR for ${REPO}:$TAG"
+          az acr repository show-tags --name "$ACR" --repository "$REPO" --orderby time_desc --top 200 -o tsv > /tmp/acr_tags.tsv || true
+          if ! grep -xF "$TAG" /tmp/acr_tags.tsv; then
+            echo "Tag '$TAG' not found in ACR $ACR/$REPO"
+            echo "Available tags (top 20):"
+            head -n 20 /tmp/acr_tags.tsv || true
+            exit 1
+          fi
+          echo "Found tag $TAG"
+
       # ------------------------------------------------------
       # Deploy image
       # ------------------------------------------------------
@@ -626,6 +646,26 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Verify ACR tag exists
+        run: |
+          set -euo pipefail
+          TAG="${{ needs.build.outputs.image-tag }}"
+          if [ -z "$TAG" ]; then
+            echo "image-tag is empty; failing fast to avoid deploying empty image"
+            exit 1
+          fi
+          REPO="${{ inputs.docker-image-name }}"
+          ACR="${{ env.AZURE_ACR_NAME }}"
+          echo "Checking ACR $ACR for ${REPO}:$TAG"
+          az acr repository show-tags --name "$ACR" --repository "$REPO" --orderby time_desc --top 200 -o tsv > /tmp/acr_tags.tsv || true
+          if ! grep -xF "$TAG" /tmp/acr_tags.tsv; then
+            echo "Tag '$TAG' not found in ACR $ACR/$REPO"
+            echo "Available tags (top 20):"
+            head -n 20 /tmp/acr_tags.tsv || true
+            exit 1
+          fi
+          echo "Found tag $TAG"
 
       # ------------------------------------------------------
       # Deploy image
