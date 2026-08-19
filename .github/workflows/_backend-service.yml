@@ -23,11 +23,17 @@ on:
         description: 'Service port e.g. 8081'
         required: true
         type: string
-      deploy-to:
+      deploy_to:
         description: 'Target environment: staging or production'
         required: false
         type: string
         default: 'staging'
+
+      deploy_only:
+        description: 'If true, skip test and build jobs and run deployment only (uses staging image tag)'
+        required: false
+        type: boolean
+        default: false
 
     secrets:
       AZURE_CLIENT_ID:
@@ -80,7 +86,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Skip tests for deploy_only
+        if: ${{ inputs.deploy_only == true }}
+        run: |
+          echo "deploy_only requested; skipping tests"
+          # succeed early; subsequent test steps are conditional
+          exit 0
+
       - name: Set up JDK 21
+        if: ${{ inputs.deploy_only == false }}
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -89,6 +103,7 @@ jobs:
           cache-dependency-path: ${{ inputs.service-path }}/pom.xml
 
       - name: Run tests
+        if: ${{ inputs.deploy_only == false }}
         run: ./mvnw -B test
 
 
@@ -110,14 +125,22 @@ jobs:
         working-directory: ${{ inputs.service-path }}
 
     outputs:
-      image-tag: ${{ steps.meta.outputs.image-tag }}
+      image-tag: ${{ steps.meta.outputs.image-tag || steps.meta_deploy.outputs.image-tag }}
 
     steps:
 
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: 'Deploy-only: set image-tag and skip build'
+        id: meta_deploy
+        if: ${{ inputs.deploy_only == true }}
+        run: |
+          echo "deploy_only requested; skipping full build and using staging tag"
+          echo "image-tag=staging" >> "$GITHUB_OUTPUT"
+
       - name: Set up GraalVM
+        if: ${{ inputs.deploy_only == false }}
         uses: graalvm/setup-graalvm@v1
         with:
           version: '25.0'
@@ -126,9 +149,11 @@ jobs:
           cache: 'maven'
 
       - name: Build native image
+        if: ${{ inputs.deploy_only == false }}
         run: ./mvnw -Pnative native:compile -DskipTests -B
 
       - name: Build Docker image
+        if: ${{ inputs.deploy_only == false }}
         id: meta
         run: |
           cp target/${{ inputs.service-name }} ./${{ inputs.service-name }}-native
@@ -145,6 +170,7 @@ jobs:
           echo "image-tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Azure Login
+        if: ${{ inputs.deploy_only == false }}
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -152,11 +178,13 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Login to ACR
+        if: ${{ inputs.deploy_only == false }}
         run: |
           az acr login \
             --name ${{ env.AZURE_ACR_NAME }}
 
       - name: Push Docker image
+        if: ${{ inputs.deploy_only == false }}
         run: |
           IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}"
 
@@ -172,7 +200,7 @@ jobs:
     name: Deploy Staging - ${{ inputs.service-name }}
     needs: build
 
-    if: inputs.deploy-to == 'staging'
+    if: ${{ inputs.deploy_to == 'staging' }}
 
     runs-on: ubuntu-latest
 
@@ -194,6 +222,26 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Verify ACR tag exists
+        run: |
+          set -euo pipefail
+          TAG="${{ needs.build.outputs.image-tag }}"
+          if [ -z "$TAG" ]; then
+            echo "image-tag is empty; failing fast to avoid deploying empty image"
+            exit 1
+          fi
+          REPO="${{ inputs.docker-image-name }}"
+          ACR="${{ env.AZURE_ACR_NAME }}"
+          echo "Checking ACR $ACR for ${REPO}:$TAG"
+          az acr repository show-tags --name "$ACR" --repository "$REPO" --orderby time_desc --top 200 -o tsv > /tmp/acr_tags.tsv || true
+          if ! grep -xF "$TAG" /tmp/acr_tags.tsv; then
+            echo "Tag '$TAG' not found in ACR $ACR/$REPO"
+            echo "Available tags (top 20):"
+            head -n 20 /tmp/acr_tags.tsv || true
+            exit 1
+          fi
+          echo "Found tag $TAG"
 
       # ------------------------------------------------------
       # Deploy image
@@ -324,7 +372,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "Configuring Startup, Readiness and Liveness probes..."
+          echo "Configuring Startup, Readiness and Liveness probes... (capping initialDelaySeconds at 60)"
 
           CURRENT=$(az containerapp show \
             --name "${{ inputs.container-app-name }}" \
@@ -334,6 +382,7 @@ jobs:
           UPDATED=$(echo "$CURRENT" | jq \
             --arg port "${{ inputs.server-port }}" \
             '
+            # Ensure readiness initialDelaySeconds <= 60 to satisfy Azure limits
             .properties.template.containers[0].probes = [
 
               {
@@ -354,10 +403,10 @@ jobs:
                   "path": "/actuator/health",
                   "port": ($port | tonumber)
                 },
-                "initialDelaySeconds": 10,
+                "initialDelaySeconds": 60,
                 "periodSeconds": 30,
                 "timeoutSeconds": 10,
-                "failureThreshold": 10,
+                "failureThreshold": 3,
                 "successThreshold": 1
               },
 
@@ -403,10 +452,11 @@ jobs:
             -o tsv)
 
           echo "Final revision with health probes: $FINAL_REVISION"
-          echo "Waiting until Azure reports the revision as Healthy..."
+          echo "Waiting until Azure reports the revision as Healthy and serving traffic..."
 
           FINAL_PROVISIONING_STATE="Unknown"
           HEALTH_STATE="None"
+          REPLICAS_NUM=0
 
           for i in $(seq 1 60); do
 
@@ -431,7 +481,13 @@ jobs:
               --query "properties.replicas" \
               -o tsv 2>/dev/null || echo "0")
 
-            echo "Attempt $i/60 - provisioning=$FINAL_PROVISIONING_STATE health=$HEALTH_STATE replicas=$REPLICAS"
+            # normalize numeric replicas
+            REPLICAS_NUM=$(echo "$REPLICAS" | tr -cd '0-9') || true
+            if [ -z "$REPLICAS_NUM" ]; then
+              REPLICAS_NUM=0
+            fi
+
+            echo "Attempt $i/60 - provisioning=$FINAL_PROVISIONING_STATE health=$HEALTH_STATE replicas=$REPLICAS_NUM"
 
             if [ "$FINAL_PROVISIONING_STATE" = "Failed" ]; then
 
@@ -448,9 +504,10 @@ jobs:
             fi
 
             if [ "$FINAL_PROVISIONING_STATE" = "Provisioned" ] && \
-               [ "$HEALTH_STATE" = "Healthy" ]; then
+               [ "$HEALTH_STATE" = "Healthy" ] && \
+               [ "$REPLICAS_NUM" -gt 0 ]; then
 
-              echo "Final revision is Provisioned and Healthy."
+              echo "Final revision is Provisioned, Healthy and has replicas > 0."
               break
 
             fi
@@ -460,9 +517,10 @@ jobs:
           done
 
           if [ "$FINAL_PROVISIONING_STATE" != "Provisioned" ] || \
-             [ "$HEALTH_STATE" != "Healthy" ]; then
+             [ "$HEALTH_STATE" != "Healthy" ] || \
+             [ "$REPLICAS_NUM" -le 0 ]; then
 
-            echo "Final revision did not become healthy within timeout."
+            echo "Final revision did not become healthy and serving within timeout."
 
             echo "Final Azure revision information:"
 
@@ -484,13 +542,15 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Use the revision-specific FQDN to avoid 404s before the revision receives traffic
           APP_FQDN=$(az containerapp show \
             --name "${{ inputs.container-app-name }}" \
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --query "properties.configuration.ingress.fqdn" \
+            --query "properties.latestRevisionFqdn" \
             -o tsv)
 
           HEALTH_URL="https://${APP_FQDN}/actuator/health"
+          HEALTH_URL_FALLBACK="https://${APP_FQDN}/actuator/health/readiness"
 
           echo "External health URL:"
           echo "$HEALTH_URL"
@@ -498,8 +558,9 @@ jobs:
           for i in $(seq 1 18); do
 
             HTTP_STATUS=$(curl \
-              --connect-timeout 10 \
-              --max-time 20 \
+              --retry 8 --retry-delay 6 --retry-connrefused \
+              --connect-timeout 5 \
+              --max-time 10 \
               -s \
               -o /tmp/health-response.json \
               -w "%{http_code}" \
@@ -510,12 +571,27 @@ jobs:
             if [ "$HTTP_STATUS" = "200" ]; then
 
               echo "Health check passed."
-
               cat /tmp/health-response.json || true
               echo
-
               exit 0
 
+            fi
+
+            # if 404 try a readiness-specific endpoint as fallback
+            if [ "$HTTP_STATUS" = "404" ]; then
+              echo "Received 404 from $HEALTH_URL, trying fallback $HEALTH_URL_FALLBACK"
+              HTTP_STATUS2=$(curl \
+                --retry 4 --retry-delay 3 --retry-connrefused \
+                --connect-timeout 5 \
+                --max-time 10 \
+                -s -o /tmp/health-response-fallback.json -w "%{http_code}" "$HEALTH_URL_FALLBACK" || true)
+
+              echo "Fallback HTTP $HTTP_STATUS2"
+              if [ "$HTTP_STATUS2" = "200" ]; then
+                echo "Fallback health check passed."
+                cat /tmp/health-response-fallback.json || true
+                exit 0
+              fi
             fi
 
             if [ -f /tmp/health-response.json ]; then
@@ -530,6 +606,13 @@ jobs:
 
           echo "External health check failed."
 
+          echo "Revision debug output:"
+          az containerapp revision show \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --revision "$(az containerapp show --name "${{ inputs.container-app-name }}" --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" --query properties.latestRevisionName -o tsv)" \
+            -o json || true
+
           exit 1
 
 
@@ -541,7 +624,7 @@ jobs:
     name: Deploy Production - ${{ inputs.service-name }}
     needs: build
 
-    if: inputs.deploy-to == 'production'
+    if: ${{ inputs.deploy_to == 'production' }}
 
     runs-on: ubuntu-latest
 
@@ -563,6 +646,26 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Verify ACR tag exists
+        run: |
+          set -euo pipefail
+          TAG="${{ needs.build.outputs.image-tag }}"
+          if [ -z "$TAG" ]; then
+            echo "image-tag is empty; failing fast to avoid deploying empty image"
+            exit 1
+          fi
+          REPO="${{ inputs.docker-image-name }}"
+          ACR="${{ env.AZURE_ACR_NAME }}"
+          echo "Checking ACR $ACR for ${REPO}:$TAG"
+          az acr repository show-tags --name "$ACR" --repository "$REPO" --orderby time_desc --top 200 -o tsv > /tmp/acr_tags.tsv || true
+          if ! grep -xF "$TAG" /tmp/acr_tags.tsv; then
+            echo "Tag '$TAG' not found in ACR $ACR/$REPO"
+            echo "Available tags (top 20):"
+            head -n 20 /tmp/acr_tags.tsv || true
+            exit 1
+          fi
+          echo "Found tag $TAG"
 
       # ------------------------------------------------------
       # Deploy image
@@ -690,7 +793,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "Configuring Startup, Readiness and Liveness probes..."
+          echo "Configuring Startup, Readiness and Liveness probes... (capping initialDelaySeconds at 60)"
 
           CURRENT=$(az containerapp show \
             --name "${{ inputs.container-app-name }}" \
@@ -700,6 +803,7 @@ jobs:
           UPDATED=$(echo "$CURRENT" | jq \
             --arg port "${{ inputs.server-port }}" \
             '
+            # Ensure readiness initialDelaySeconds <= 60 to satisfy Azure limits
             .properties.template.containers[0].probes = [
 
               {
@@ -720,10 +824,10 @@ jobs:
                   "path": "/actuator/health",
                   "port": ($port | tonumber)
                 },
-                "initialDelaySeconds": 10,
+                "initialDelaySeconds": 60,
                 "periodSeconds": 30,
                 "timeoutSeconds": 10,
-                "failureThreshold": 10,
+                "failureThreshold": 3,
                 "successThreshold": 1
               },
 
@@ -766,10 +870,11 @@ jobs:
             -o tsv)
 
           echo "Final production revision: $FINAL_REVISION"
-          echo "Waiting until Azure reports the revision as Healthy..."
+          echo "Waiting until Azure reports the revision as Healthy and serving traffic..."
 
           FINAL_PROVISIONING_STATE="Unknown"
           HEALTH_STATE="None"
+          REPLICAS_NUM=0
 
           for i in $(seq 1 60); do
 
@@ -794,7 +899,13 @@ jobs:
               --query "properties.replicas" \
               -o tsv 2>/dev/null || echo "0")
 
-            echo "Attempt $i/60 - provisioning=$FINAL_PROVISIONING_STATE health=$HEALTH_STATE replicas=$REPLICAS"
+            # normalize numeric replicas
+            REPLICAS_NUM=$(echo "$REPLICAS" | tr -cd '0-9') || true
+            if [ -z "$REPLICAS_NUM" ]; then
+              REPLICAS_NUM=0
+            fi
+
+            echo "Attempt $i/60 - provisioning=$FINAL_PROVISIONING_STATE health=$HEALTH_STATE replicas=$REPLICAS_NUM"
 
             if [ "$FINAL_PROVISIONING_STATE" = "Failed" ]; then
 
@@ -811,9 +922,10 @@ jobs:
             fi
 
             if [ "$FINAL_PROVISIONING_STATE" = "Provisioned" ] && \
-               [ "$HEALTH_STATE" = "Healthy" ]; then
+               [ "$HEALTH_STATE" = "Healthy" ] && \
+               [ "$REPLICAS_NUM" -gt 0 ]; then
 
-              echo "Final production revision is Provisioned and Healthy."
+              echo "Final production revision is Provisioned, Healthy and has replicas > 0."
               break
 
             fi
@@ -823,9 +935,10 @@ jobs:
           done
 
           if [ "$FINAL_PROVISIONING_STATE" != "Provisioned" ] || \
-             [ "$HEALTH_STATE" != "Healthy" ]; then
+             [ "$HEALTH_STATE" != "Healthy" ] || \
+             [ "$REPLICAS_NUM" -le 0 ]; then
 
-            echo "Final production revision did not become healthy within timeout."
+            echo "Final production revision did not become healthy and serving within timeout."
 
             az containerapp revision show \
               --revision "$FINAL_REVISION" \
@@ -845,13 +958,15 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Use revision-specific FQDN to avoid 404s before traffic is routed
           APP_FQDN=$(az containerapp show \
             --name "${{ inputs.container-app-name }}" \
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-            --query "properties.configuration.ingress.fqdn" \
+            --query "properties.latestRevisionFqdn" \
             -o tsv)
 
           HEALTH_URL="https://${APP_FQDN}/actuator/health"
+          HEALTH_URL_FALLBACK="https://${APP_FQDN}/actuator/health/readiness"
 
           echo "External health URL:"
           echo "$HEALTH_URL"
@@ -859,8 +974,9 @@ jobs:
           for i in $(seq 1 18); do
 
             HTTP_STATUS=$(curl \
-              --connect-timeout 10 \
-              --max-time 20 \
+              --retry 8 --retry-delay 6 --retry-connrefused \
+              --connect-timeout 5 \
+              --max-time 10 \
               -s \
               -o /tmp/health-response.json \
               -w "%{http_code}" \
@@ -879,6 +995,19 @@ jobs:
 
             fi
 
+            if [ "$HTTP_STATUS" = "404" ]; then
+              echo "Received 404 from $HEALTH_URL, trying fallback $HEALTH_URL_FALLBACK"
+              HTTP_STATUS2=$(curl \
+                --retry 4 --retry-delay 3 --retry-connrefused \
+                --connect-timeout 5 --max-time 10 -s -o /tmp/health-response-fallback.json -w "%{http_code}" "$HEALTH_URL_FALLBACK" || true)
+              echo "Fallback HTTP $HTTP_STATUS2"
+              if [ "$HTTP_STATUS2" = "200" ]; then
+                echo "Fallback health check passed."
+                cat /tmp/health-response-fallback.json || true
+                exit 0
+              fi
+            fi
+
             if [ -f /tmp/health-response.json ]; then
               echo "Response:"
               cat /tmp/health-response.json || true
@@ -890,5 +1019,12 @@ jobs:
           done
 
           echo "Production external health check failed."
+
+          echo "Revision debug output:"
+          az containerapp revision show \
+            --name "${{ inputs.container-app-name }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --revision "$(az containerapp show --name "${{ inputs.container-app-name }}" --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" --query properties.latestRevisionName -o tsv)" \
+            -o json || true
 
           exit 1
