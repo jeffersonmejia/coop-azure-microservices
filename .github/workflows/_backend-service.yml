@@ -56,7 +56,6 @@ jobs:
   # ==========================================================
 
   test:
-    if: ${{ inputs.deploy_only == false }}
     name: Tests - ${{ inputs.service-name }}
     runs-on: ubuntu-latest
 
@@ -87,7 +86,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Skip tests for deploy_only
+        if: ${{ inputs.deploy_only == true }}
+        run: |
+          echo "deploy_only requested; skipping tests"
+          # succeed early; subsequent test steps are conditional
+          exit 0
+
       - name: Set up JDK 21
+        if: ${{ inputs.deploy_only == false }}
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -96,6 +103,7 @@ jobs:
           cache-dependency-path: ${{ inputs.service-path }}/pom.xml
 
       - name: Run tests
+        if: ${{ inputs.deploy_only == false }}
         run: ./mvnw -B test
 
 
