@@ -9,7 +9,7 @@ on:
       - '.github/workflows/_backend-service.yml'
   workflow_dispatch:
     inputs:
-      deploy-to:
+      deploy_to:
         description: 'Target environment'
         required: true
         type: choice
@@ -31,7 +31,7 @@ jobs:
       docker-image-name: coop-account
       container-app-name: ca-coop-dev-account
       server-port: '8082'
-      deploy-to: ${{ inputs.deploy-to || 'staging' }}
+      deploy_to: ${{ inputs.deploy_to || 'staging' }}
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
