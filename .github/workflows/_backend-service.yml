@@ -244,6 +244,23 @@ jobs:
           echo "Found tag $TAG"
 
       # ------------------------------------------------------
+      # Resolve dependent service URLs (payment-service only)
+      # ------------------------------------------------------
+
+      - name: Resolve dependent service URLs
+        id: resolve-urls
+        if: inputs.service-name == 'payment-service'
+        run: |
+          set -euo pipefail
+          ACCOUNT_FQDN=$(az containerapp show \
+            --name "ca-coop-dev-account" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --query "properties.configuration.ingress.fqdn" \
+            -o tsv)
+          echo "ACCOUNT_SERVICE_URL=https://${ACCOUNT_FQDN}" >> "$GITHUB_OUTPUT"
+          echo "Resolved account-service URL: https://${ACCOUNT_FQDN}"
+
+      # ------------------------------------------------------
       # Deploy image
       # ------------------------------------------------------
 
@@ -256,6 +273,12 @@ jobs:
           echo "Deploying image:"
           echo "$IMAGE"
 
+          # Build extra env vars for dependent services
+          EXTRA_SET_ENV_ARGS=()
+          if [ -n "${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}" ]; then
+            EXTRA_SET_ENV_ARGS+=(--set-env-vars "ACCOUNT_SERVICE_URL=${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}")
+          fi
+
           if az containerapp show \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
@@ -266,7 +289,8 @@ jobs:
             az containerapp update \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --image "$IMAGE"
+              --image "$IMAGE" \
+              ${EXTRA_SET_ENV_ARGS[@]+"${EXTRA_SET_ENV_ARGS[@]}"}
 
           else
 
@@ -283,6 +307,11 @@ jobs:
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
               --query "id" \
               -o tsv)
+
+            EXTRA_CREATE_ENV=""
+            if [ -n "${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}" ]; then
+              EXTRA_CREATE_ENV="ACCOUNT_SERVICE_URL=${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}"
+            fi
 
             az containerapp create \
               --name "${{ inputs.container-app-name }}" \
@@ -302,7 +331,8 @@ jobs:
                 "SPRING_DATASOURCE_URL=jdbc:postgresql://psql-coop-dev.postgres.database.azure.com:5432/coop?sslmode=require" \
                 "SPRING_DATASOURCE_USERNAME=coopadmin" \
                 "SPRING_DATASOURCE_PASSWORD=${{ secrets.AZURE_DB_PASSWORD }}" \
-                "JWT_SECRET=dev-jwt-secret-change-in-prod"
+                "JWT_SECRET=dev-jwt-secret-change-in-prod" \
+                ${EXTRA_CREATE_ENV:+"$EXTRA_CREATE_ENV"}
 
           fi
 
@@ -668,6 +698,23 @@ jobs:
           echo "Found tag $TAG"
 
       # ------------------------------------------------------
+      # Resolve dependent service URLs (payment-service only)
+      # ------------------------------------------------------
+
+      - name: Resolve dependent service URLs
+        id: resolve-urls
+        if: inputs.service-name == 'payment-service'
+        run: |
+          set -euo pipefail
+          ACCOUNT_FQDN=$(az containerapp show \
+            --name "ca-coop-dev-account" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --query "properties.configuration.ingress.fqdn" \
+            -o tsv)
+          echo "ACCOUNT_SERVICE_URL=https://${ACCOUNT_FQDN}" >> "$GITHUB_OUTPUT"
+          echo "Resolved account-service URL: https://${ACCOUNT_FQDN}"
+
+      # ------------------------------------------------------
       # Deploy image
       # ------------------------------------------------------
 
@@ -680,6 +727,12 @@ jobs:
           echo "Deploying image:"
           echo "$IMAGE"
 
+          # Build extra env vars for dependent services
+          EXTRA_SET_ENV_ARGS=()
+          if [ -n "${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}" ]; then
+            EXTRA_SET_ENV_ARGS+=(--set-env-vars "ACCOUNT_SERVICE_URL=${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}")
+          fi
+
           if az containerapp show \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
@@ -690,7 +743,8 @@ jobs:
             az containerapp update \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --image "$IMAGE"
+              --image "$IMAGE" \
+              ${EXTRA_SET_ENV_ARGS[@]+"${EXTRA_SET_ENV_ARGS[@]}"}
 
           else
 
@@ -707,6 +761,11 @@ jobs:
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
               --query "id" \
               -o tsv)
+
+            EXTRA_CREATE_ENV=""
+            if [ -n "${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}" ]; then
+              EXTRA_CREATE_ENV="ACCOUNT_SERVICE_URL=${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}"
+            fi
 
             az containerapp create \
               --name "${{ inputs.container-app-name }}" \
@@ -726,7 +785,8 @@ jobs:
                 "SPRING_DATASOURCE_URL=jdbc:postgresql://psql-coop-dev.postgres.database.azure.com:5432/coop?sslmode=require" \
                 "SPRING_DATASOURCE_USERNAME=coopadmin" \
                 "SPRING_DATASOURCE_PASSWORD=${{ secrets.AZURE_DB_PASSWORD }}" \
-                "JWT_SECRET=dev-jwt-secret-change-in-prod"
+                "JWT_SECRET=dev-jwt-secret-change-in-prod" \
+                ${EXTRA_CREATE_ENV:+"$EXTRA_CREATE_ENV"}
 
           fi
 
