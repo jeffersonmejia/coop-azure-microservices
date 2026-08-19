@@ -23,7 +23,7 @@ on:
         description: 'Service port e.g. 8081'
         required: true
         type: string
-      deploy-to:
+      deploy_to:
         description: 'Target environment: staging or production'
         required: false
         type: string
@@ -191,7 +191,7 @@ jobs:
     name: Deploy Staging - ${{ inputs.service-name }}
     needs: build
 
-    if: inputs.deploy-to == 'staging'
+    if: ${{ inputs.deploy_to == 'staging' }}
 
     runs-on: ubuntu-latest
 
@@ -595,7 +595,7 @@ jobs:
     name: Deploy Production - ${{ inputs.service-name }}
     needs: build
 
-    if: inputs.deploy-to == 'production'
+    if: ${{ inputs.deploy_to == 'production' }}
 
     runs-on: ubuntu-latest
 
