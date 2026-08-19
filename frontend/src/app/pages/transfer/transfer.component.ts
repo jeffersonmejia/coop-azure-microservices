@@ -74,6 +74,11 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     </div>
   `,
   styles: `
+    :host {
+      display: block;
+      padding-bottom: 60px;
+    }
+
     .transfer-header {
       display: flex;
       align-items: center;

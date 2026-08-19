@@ -1,6 +1,6 @@
 @use '@angular/material' as mat;
 
-$theme: mat.define-theme(
+$coop-theme: mat.define-theme(
   (
     color: (
       theme-type: light,
@@ -11,7 +11,7 @@ $theme: mat.define-theme(
 );
 
 html {
-  @include mat.all-component-themes($theme);
+  @include mat.all-component-themes($coop-theme);
   color-scheme: light;
 }
 
@@ -23,7 +23,7 @@ body {
 
 body {
   font-family: Roboto, 'Helvetica Neue', sans-serif;
-  background: linear-gradient(160deg, #e8f5e9 0%, #f1f8e9 40%, #ffffff 100%);
+  background: linear-gradient(160deg, #c8e6c9 0%, #e8f5e9 40%, #ffffff 100%);
 }
 
 .page {

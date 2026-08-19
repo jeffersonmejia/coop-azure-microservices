@@ -27,6 +27,12 @@ import { AuthService } from '../../services/auth.service';
       <div class="auth-right">
         <div class="auth-form">
           <h1>Crear cuenta</h1>
+          @if (errorMessage()) {
+            <div class="error-banner">
+              <mat-icon>error_outline</mat-icon>
+              <span>{{ errorMessage() }}</span>
+            </div>
+          }
           <form (ngSubmit)="onSubmit()">
             <mat-form-field appearance="outline">
               <mat-label>Nombre</mat-label>
@@ -105,7 +111,7 @@ import { AuthService } from '../../services/auth.service';
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #e8f5e9;
+      background: #c8e6c9;
       padding: 40px;
     }
 
@@ -134,6 +140,26 @@ import { AuthService } from '../../services/auth.service';
       color: #1b5e20;
       margin-bottom: 32px;
       text-align: center;
+    }
+
+    .error-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      background: #ffebee;
+      border: 1px solid #ef9a9a;
+      border-radius: 8px;
+      color: #c62828;
+      font-size: 14px;
+    }
+
+    .error-banner mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
     }
 
     .submit-btn {
@@ -186,6 +212,7 @@ export class RegisterComponent {
   password = '';
   hidePassword = signal(true);
   loading = signal(false);
+  errorMessage = signal('');
 
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
@@ -194,14 +221,17 @@ export class RegisterComponent {
     if (!this.firstName || !this.lastName || !this.email || !this.password) {
       return;
     }
+    this.errorMessage.set('');
     this.loading.set(true);
     this.auth.register(this.firstName, this.lastName, this.email, this.password).subscribe({
       next: () => {
         this.loading.set(false);
         this.router.navigate(['/login']);
       },
-      error: () => {
+      error: (err) => {
         this.loading.set(false);
+        const msg = err?.error?.message || err?.message || 'Error al registrar. Intenta de nuevo.';
+        this.errorMessage.set(msg);
       },
     });
   }

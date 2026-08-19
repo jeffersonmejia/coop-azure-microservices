@@ -97,6 +97,11 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     </div>
   `,
   styles: `
+    :host {
+      display: block;
+      padding-bottom: 60px;
+    }
+
     .table-wrap {
       overflow-x: auto;
     }
