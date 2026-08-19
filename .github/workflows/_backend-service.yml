@@ -29,6 +29,12 @@ on:
         type: string
         default: 'staging'
 
+      deploy_only:
+        description: 'If true, skip test and build jobs and run deployment only (uses staging image tag)'
+        required: false
+        type: boolean
+        default: false
+
     secrets:
       AZURE_CLIENT_ID:
         required: true
@@ -50,6 +56,7 @@ jobs:
   # ==========================================================
 
   test:
+    if: ${{ inputs.deploy_only == false }}
     name: Tests - ${{ inputs.service-name }}
     runs-on: ubuntu-latest
 
@@ -117,7 +124,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Deploy-only: set image-tag and skip build
+        if: ${{ inputs.deploy_only == true }}
+        run: |
+          echo "deploy_only requested; skipping full build and using staging tag"
+          echo "image-tag=staging" >> "$GITHUB_OUTPUT"
+
       - name: Set up GraalVM
+        if: ${{ inputs.deploy_only == false }}
         uses: graalvm/setup-graalvm@v1
         with:
           version: '25.0'
@@ -126,9 +140,11 @@ jobs:
           cache: 'maven'
 
       - name: Build native image
+        if: ${{ inputs.deploy_only == false }}
         run: ./mvnw -Pnative native:compile -DskipTests -B
 
       - name: Build Docker image
+        if: ${{ inputs.deploy_only == false }}
         id: meta
         run: |
           cp target/${{ inputs.service-name }} ./${{ inputs.service-name }}-native
@@ -145,6 +161,7 @@ jobs:
           echo "image-tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Azure Login
+        if: ${{ inputs.deploy_only == false }}
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -152,11 +169,13 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Login to ACR
+        if: ${{ inputs.deploy_only == false }}
         run: |
           az acr login \
             --name ${{ env.AZURE_ACR_NAME }}
 
       - name: Push Docker image
+        if: ${{ inputs.deploy_only == false }}
         run: |
           IMAGE="${{ env.AZURE_ACR_NAME }}.azurecr.io/${{ inputs.docker-image-name }}"
 

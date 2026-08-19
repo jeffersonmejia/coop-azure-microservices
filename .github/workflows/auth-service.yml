@@ -17,7 +17,7 @@ on:
           - staging
           - production
         default: staging
-      deploy-only:
+      deploy_only:
         description: 'If true, skip test and build and run deployment only'
         required: false
         type: boolean
@@ -37,7 +37,7 @@ jobs:
       container-app-name: ca-coop-dev-auth
       server-port: '8081'
       deploy-to: ${{ inputs.deploy-to || 'staging' }}
-      deploy-only: ${{ inputs.deploy-only || false }}
+      deploy_only: ${{ inputs.deploy_only || false }}
     secrets:
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
