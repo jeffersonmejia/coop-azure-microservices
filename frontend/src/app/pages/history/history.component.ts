@@ -112,42 +112,45 @@ import { NavBarComponent } from '../../components/nav-bar.component';
       align-items: center;
       gap: 12px;
       padding: 40px;
-      color: #888;
+      color: var(--coop-text-muted);
+      font-family: var(--coop-font);
     }
 
     .empty-icon {
       font-size: 48px;
       width: 48px;
       height: 48px;
-      color: #ccc;
+      color: var(--coop-border);
     }
 
     .amount-cell {
       font-weight: 500;
-      color: #2e7d32;
+      color: var(--coop-accent);
     }
 
     .type-badge {
       display: inline-block;
       padding: 4px 12px;
-      border-radius: 12px;
-      background: #e8f5e9;
-      color: #2e7d32;
+      border-radius: var(--coop-radius-lg);
+      background: var(--coop-green-50);
+      color: var(--coop-accent);
       font-size: 12px;
       font-weight: 500;
+      font-family: var(--coop-font);
     }
 
     .status-badge {
       display: inline-block;
       padding: 4px 12px;
-      border-radius: 12px;
+      border-radius: var(--coop-radius-lg);
       font-size: 12px;
       font-weight: 500;
+      font-family: var(--coop-font);
     }
 
     .status-completed {
-      background: #e8f5e9;
-      color: #2e7d32;
+      background: var(--coop-green-50);
+      color: var(--coop-accent);
     }
 
     .status-pending {
@@ -156,8 +159,8 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     }
 
     .status-failed {
-      background: #ffebee;
-      color: #c62828;
+      background: var(--coop-error-bg);
+      color: var(--coop-error);
     }
   `,
 })

@@ -40,11 +40,12 @@ import { AuthService } from '../services/auth.service';
       justify-content: space-between;
       padding: 0 32px;
       height: 64px;
-      background: #ffffff;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      background: var(--coop-surface);
+      box-shadow: var(--coop-shadow-sm);
       position: sticky;
       top: 0;
       z-index: 1000;
+      font-family: var(--coop-font);
     }
 
     .nav-brand {
@@ -54,7 +55,7 @@ import { AuthService } from '../services/auth.service';
     }
 
     .brand-icon {
-      color: #2e7d32;
+      color: var(--coop-accent);
       font-size: 28px;
       width: 28px;
       height: 28px;
@@ -63,7 +64,7 @@ import { AuthService } from '../services/auth.service';
     .brand-text {
       font-size: 18px;
       font-weight: 500;
-      color: #1b5e20;
+      color: var(--coop-green-800);
       letter-spacing: 0.3px;
     }
 
@@ -78,26 +79,26 @@ import { AuthService } from '../services/auth.service';
       align-items: center;
       gap: 6px;
       padding: 8px 16px;
-      border-radius: 20px;
+      border-radius: var(--coop-radius-pill);
       border: none;
       background: none;
-      color: #4a4a4a;
+      color: var(--coop-text-secondary);
       font-size: 14px;
       font-weight: 500;
       cursor: pointer;
       text-decoration: none;
       transition: all 0.2s ease;
-      font-family: inherit;
+      font-family: var(--coop-font);
     }
 
     .nav-link:hover {
-      background: #e8f5e9;
-      color: #2e7d32;
+      background: var(--coop-green-50);
+      color: var(--coop-accent);
     }
 
     .nav-link.active {
-      background: #e8f5e9;
-      color: #2e7d32;
+      background: var(--coop-green-50);
+      color: var(--coop-accent);
     }
 
     .nav-link mat-icon {

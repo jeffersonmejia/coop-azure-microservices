@@ -77,8 +77,10 @@ import { AuthService } from '../../services/auth.service';
                 <mat-spinner [diameter]="20" class="btn-spinner"></mat-spinner>
                 <span>Ingresando...</span>
               } @else {
-                <mat-icon>login</mat-icon>
-                <span>Ingresar</span>
+                <span class="btn-content">
+                  <mat-icon>login</mat-icon>
+                  <span>Ingresar</span>
+                </span>
               }
             </button>
           </form>
@@ -101,7 +103,7 @@ import { AuthService } from '../../services/auth.service';
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #c8e6c9;
+      background: var(--coop-green-100);
       padding: 40px;
     }
 
@@ -127,9 +129,10 @@ import { AuthService } from '../../services/auth.service';
     .auth-form h1 {
       font-size: 32px;
       font-weight: 500;
-      color: #1b5e20;
+      color: var(--coop-green-800);
       margin-bottom: 32px;
       text-align: center;
+      font-family: var(--coop-font);
     }
 
     .error-banner {
@@ -138,11 +141,12 @@ import { AuthService } from '../../services/auth.service';
       gap: 8px;
       padding: 12px 16px;
       margin-bottom: 20px;
-      background: #ffebee;
-      border: 1px solid #ef9a9a;
-      border-radius: 8px;
-      color: #c62828;
+      background: var(--coop-error-bg);
+      border: 1px solid var(--coop-error-border);
+      border-radius: var(--coop-radius);
+      color: var(--coop-error);
       font-size: 14px;
+      font-family: var(--coop-font);
     }
 
     .error-banner mat-icon {
@@ -157,10 +161,29 @@ import { AuthService } from '../../services/auth.service';
       height: 48px;
       font-size: 16px;
       margin-top: 16px;
-      display: flex;
+      font-family: var(--coop-font);
+      background: var(--coop-green-100) !important;
+      color: var(--coop-green-800) !important;
+      border: none;
+    }
+
+    .submit-btn:hover {
+      background: var(--coop-green-200) !important;
+    }
+
+    .btn-content {
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
       gap: 8px;
+      line-height: 1;
+    }
+
+    .btn-content mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      vertical-align: middle;
     }
 
     .btn-spinner {
@@ -170,12 +193,13 @@ import { AuthService } from '../../services/auth.service';
     .switch-text {
       text-align: center;
       margin-top: 24px;
-      color: #666;
+      color: var(--coop-text-muted);
       font-size: 14px;
+      font-family: var(--coop-font);
     }
 
     .switch-text a {
-      color: #2e7d32;
+      color: var(--coop-green-600);
       text-decoration: none;
       font-weight: 500;
     }

@@ -1,5 +1,54 @@
 @use '@angular/material' as mat;
 
+:root {
+  /* Green pastel palette - soft sage */
+  --coop-green-50: #eef4ef;
+  --coop-green-100: #dce8de;
+  --coop-green-200: #c4d9c8;
+  --coop-green-300: #a8c5ae;
+  --coop-green-400: #8fb498;
+  --coop-green-500: #7ba688;
+  --coop-green-600: #6d9578;
+  --coop-green-700: #5e8468;
+  --coop-green-800: #4a6b53;
+  --coop-green-900: #37523e;
+
+  /* Surface & background */
+  --coop-bg-start: #eef4ef;
+  --coop-bg-mid: #f4f8f5;
+  --coop-bg-end: #ffffff;
+  --coop-surface: #ffffff;
+  --coop-surface-variant: #f5faf6;
+
+  /* Text */
+  --coop-text-primary: #1a1c18;
+  --coop-text-secondary: #5f6368;
+  --coop-text-muted: #9aa0a6;
+
+  /* Accent - soft sage */
+  --coop-accent: #7ba688;
+  --coop-accent-hover: #6d9578;
+
+  /* Borders */
+  --coop-border: #dadce0;
+  --coop-border-light: #e8eaed;
+  --coop-radius: 8px;
+  --coop-radius-lg: 12px;
+  --coop-radius-pill: 20px;
+
+  /* Error */
+  --coop-error: #c62828;
+  --coop-error-bg: #ffebee;
+  --coop-error-border: #ef9a9a;
+
+  /* Font */
+  --coop-font: 'Roboto', 'Helvetica Neue', sans-serif;
+
+  /* Shadows */
+  --coop-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --coop-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 $coop-theme: mat.define-theme(
   (
     color: (
@@ -22,8 +71,8 @@ body {
 }
 
 body {
-  font-family: Roboto, 'Helvetica Neue', sans-serif;
-  background: linear-gradient(160deg, #c8e6c9 0%, #e8f5e9 40%, #ffffff 100%);
+  font-family: var(--coop-font);
+  background: linear-gradient(160deg, var(--coop-bg-start) 0%, var(--coop-bg-mid) 40%, var(--coop-bg-end) 100%);
 }
 
 .page {
@@ -52,4 +101,20 @@ body {
 
 .mat-mdc-form-field {
   width: 100%;
+}
+
+/* Page load animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page, .auth-container {
+  animation: fadeInUp 0.4s ease-out;
 }

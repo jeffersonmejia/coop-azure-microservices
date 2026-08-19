@@ -94,8 +94,10 @@ import { NavBarComponent } from '../../components/nav-bar.component';
                 <mat-spinner [diameter]="20" class="btn-spinner"></mat-spinner>
                 <span>Procesando...</span>
               } @else {
-                <mat-icon>payment</mat-icon>
-                <span>Pagar</span>
+                <span class="btn-content">
+                  <mat-icon>payment</mat-icon>
+                  <span>Pagar</span>
+                </span>
               }
             </button>
           </form>
@@ -121,8 +123,9 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     }
 
     .welcome-sub {
-      color: #666;
+      color: var(--coop-text-muted);
       margin-top: 4px;
+      font-family: var(--coop-font);
     }
 
     .welcome-illustration {
@@ -147,15 +150,17 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     }
 
     .balance {
-      color: #666;
+      color: var(--coop-text-muted);
       font-size: 14px;
+      font-family: var(--coop-font);
     }
 
     .balance-value {
       font-size: 40px;
       font-weight: 500;
       margin-top: 8px;
-      color: #2e7d32;
+      color: var(--coop-accent);
+      font-family: var(--coop-font);
     }
 
     .pay-card {
@@ -169,6 +174,29 @@ import { NavBarComponent } from '../../components/nav-bar.component';
       gap: 8px;
       width: 100%;
       height: 48px;
+      font-family: var(--coop-font);
+      background: var(--coop-green-100) !important;
+      color: var(--coop-green-800) !important;
+      border: none;
+    }
+
+    .submit-btn:hover {
+      background: var(--coop-green-200) !important;
+    }
+
+    .btn-content {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      line-height: 1;
+    }
+
+    .btn-content mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      vertical-align: middle;
     }
 
     .btn-spinner {

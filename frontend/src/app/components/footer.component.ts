@@ -21,29 +21,28 @@ import { Component } from '@angular/core';
       bottom: 0;
       left: 0;
       right: 0;
-      background: #ffffff;
-      border-top: 1px solid #e0e0e0;
-      padding: 12px 32px;
+      padding: 12px 24px;
       z-index: 999;
+      text-align: center;
     }
 
     .footer-content {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
-      max-width: 1200px;
-      margin: 0 auto;
+      gap: 4px;
+      font-family: var(--coop-font);
       font-size: 13px;
-      color: #666;
+      color: var(--coop-text-muted);
     }
 
     .footer-brand {
       font-weight: 500;
-      color: #2e7d32;
+      color: var(--coop-text-muted);
     }
 
     .footer-dev a {
-      color: #2e7d32;
+      color: var(--coop-accent);
       text-decoration: none;
       font-weight: 500;
     }
