@@ -1,0 +1,34 @@
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes soft-float {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-7px) rotate(1deg); }
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { background-color: #edf0ee; }
+  50% { background-color: #e1e7e3; }
+}
+
+.page,
+.auth-container { animation: fade-in-up 420ms var(--coop-ease) both; }
+
+.welcome-illustration,
+.transfer-illustration,
+.auth-illustration { animation: soft-float 6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}

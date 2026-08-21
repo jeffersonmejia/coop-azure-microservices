@@ -1,0 +1,218 @@
+.auth-container {
+  display: flex;
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
+.auth-left,
+.auth-right {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-left {
+  padding: 32px clamp(28px, 5vw, 64px);
+  border-radius: 0 24px 24px 0;
+  background: var(--coop-green-100);
+}
+
+.auth-story { width: min(100%, 500px); }
+
+.story-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border: 1px solid rgb(23 108 51 / 14%);
+  border-radius: var(--coop-radius-pill);
+  color: var(--coop-green-800);
+  background: rgb(255 255 255 / 60%);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.story-kicker mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+}
+
+.auth-story h2 {
+  margin: 22px 0 12px;
+  color: var(--coop-green-900);
+  font-size: clamp(2.2rem, 4vw, 3.35rem);
+  font-weight: 620;
+  letter-spacing: -.05em;
+  line-height: 1;
+}
+
+.auth-story p {
+  max-width: 430px;
+  margin: 0;
+  color: var(--coop-text-secondary);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.auth-illustration {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  height: auto;
+  margin: 18px auto 0;
+}
+
+.auth-right {
+  flex-direction: column;
+  padding: 24px clamp(24px, 5vw, 60px);
+}
+
+.auth-form {
+  width: 100%;
+  max-width: 372px;
+  box-sizing: border-box;
+  padding: 26px 30px;
+  border: 1px solid #e5e8e5;
+  border-radius: 24px;
+  background: var(--coop-surface);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 20px;
+  color: var(--coop-text-secondary);
+  font-size: 14px;
+}
+
+.auth-brand > span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  margin-right: 3px;
+  place-items: center;
+  border-radius: 9px;
+  border: 1px solid #c9dfcf;
+  color: var(--coop-green-800);
+  background: var(--coop-action-bg);
+}
+
+.auth-brand mat-icon { width: 17px; height: 17px; font-size: 17px; }
+.auth-brand strong { color: var(--coop-green-800); }
+
+.auth-form h1 {
+  margin: 0 0 6px;
+  color: var(--coop-text-primary);
+  font-family: var(--coop-font);
+  font-size: 27px;
+  font-weight: 520;
+  letter-spacing: -.03em;
+  text-align: left;
+}
+
+.form-subtitle {
+  margin: 0 0 20px;
+  color: var(--coop-text-muted);
+  font-size: 14px;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  margin-bottom: 16px;
+  border: 1px solid var(--coop-error-border);
+  border-radius: var(--coop-radius);
+  color: var(--coop-error);
+  background: var(--coop-error-bg);
+  font-size: 14px;
+}
+
+.error-banner mat-icon { width: 20px; height: 20px; flex-shrink: 0; font-size: 20px; }
+
+.field-error {
+  margin: -4px 12px 8px;
+  color: var(--coop-error);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.auth-form .submit-btn {
+  width: 100%;
+  height: 44px;
+  margin-top: 14px;
+  font-size: 15px;
+}
+
+.auth-form .mat-mdc-form-field {
+  margin-bottom: 10px;
+}
+
+.btn-content { display: inline-flex; align-items: center; gap: 8px; line-height: 1; }
+.btn-content mat-icon { width: 20px; height: 20px; margin: 0; font-size: 20px; vertical-align: middle; }
+.btn-spinner { display: inline-block; }
+
+.switch-text {
+  margin: 18px 0 0;
+  color: var(--coop-text-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.switch-text a { color: var(--coop-green-800); font-weight: 500; text-decoration: none; }
+.switch-text a:hover { text-decoration: underline; }
+
+.register-page .auth-left { padding-block: 24px; }
+.register-page .auth-illustration { max-width: 235px; margin-top: 10px; }
+.register-page .auth-right { padding-block: 18px; }
+.register-page .auth-form { padding-block: 22px; }
+.register-page .auth-brand { margin-bottom: 16px; }
+.register-page .form-subtitle { margin-bottom: 16px; }
+.register-page .switch-text { margin-top: 14px; }
+
+@media (max-width: 768px) {
+  .auth-left { display: none; }
+  .auth-right { padding: 18px; }
+  .auth-form { max-width: 360px; padding: 26px 24px; }
+}
+
+/* Auth pages own their footer; the root footer is hidden to prevent duplication. */
+body:has(.auth-container) app-root > app-footer { display: none; }
+
+.auth-right > app-footer {
+  display: block;
+  width: 100%;
+  max-width: 434px;
+  margin-top: 24px;
+}
+
+.auth-right > app-footer .footer {
+  min-height: auto;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+}
+
+.auth-right > app-footer .footer-content {
+  min-height: auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  line-height: 1.25;
+}
+
+.auth-right > app-footer .footer-brand::after {
+  content: none;
+}
+
+@media (max-height: 720px) and (min-width: 769px) {
+  .auth-illustration { max-width: 210px; margin-top: 8px; }
+  .auth-story h2 { margin-top: 14px; font-size: 2.5rem; }
+  .auth-form { padding-block: 20px; }
+  .auth-brand { margin-bottom: 14px; }
+  .form-subtitle { margin-bottom: 14px; }
+}

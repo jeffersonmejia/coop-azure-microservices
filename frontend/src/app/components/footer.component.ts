@@ -6,30 +6,24 @@ import { Component } from '@angular/core';
     <footer class="footer">
       <div class="footer-content">
         <span class="footer-brand">Cooperativa Ecuador &copy; {{ year }}</span>
-        <span class="footer-dev">
-          Desarrollado por
-          <a href="https://jeffersonmejia.github.io/portfolio-app/" target="_blank" rel="noopener">
-            Jefferson
-          </a>
-        </span>
       </div>
     </footer>
   `,
   styles: `
     .footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 12px 24px;
-      z-index: 999;
+      min-height: var(--coop-footer-height);
+      padding: 0 24px;
+      box-sizing: border-box;
       text-align: center;
+      background: rgb(255 255 255 / 72%);
     }
 
     .footer-content {
       display: flex;
+      min-height: calc(var(--coop-footer-height) - 1px);
       flex-direction: column;
       align-items: center;
+      justify-content: center;
       gap: 4px;
       font-family: var(--coop-font);
       font-size: 13px;
@@ -41,15 +35,6 @@ import { Component } from '@angular/core';
       color: var(--coop-text-muted);
     }
 
-    .footer-dev a {
-      color: var(--coop-green-800);
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .footer-dev a:hover {
-      text-decoration: underline;
-    }
   `,
 })
 export class FooterComponent {

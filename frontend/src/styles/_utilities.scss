@@ -1,0 +1,32 @@
+.page {
+  width: min(100% - 32px, 920px);
+  margin: 0 auto;
+  padding: 48px 0 80px;
+}
+
+.page-header {
+  margin: 0 0 8px;
+  color: var(--coop-text-primary);
+  font-size: clamp(1.9rem, 4vw, 2.6rem);
+  font-weight: 590;
+  letter-spacing: -.035em;
+  line-height: 1.15;
+}
+
+.full-width { width: 100%; }
+.row { display: flex; gap: 16px; align-items: center; }
+.row .spacer { flex: 1 1 auto; }
+
+.skeleton {
+  display: block;
+  border-radius: 8px;
+  background: #edf0ee;
+  animation: skeleton-pulse 1.35s ease-in-out infinite;
+}
+
+@media (max-width: 680px) {
+  .page {
+    width: min(100% - 24px, 920px);
+    padding-top: 32px;
+  }
+}

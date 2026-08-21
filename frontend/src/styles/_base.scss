@@ -1,0 +1,39 @@
+html {
+  min-height: 100%;
+  color-scheme: light;
+  background: var(--coop-bg-start);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+  color: var(--coop-text-primary);
+  font-family: var(--coop-font);
+  background: linear-gradient(150deg, var(--coop-bg-start), var(--coop-bg-mid) 54%, var(--coop-bg-end));
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+app-root {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+}
+
+app-root > main {
+  display: block;
+  flex: 1 0 auto;
+}
+
+button,
+input { font: inherit; }
+
+button,
+a { -webkit-tap-highlight-color: transparent; }
+
+:focus-visible {
+  outline: 3px solid rgb(23 108 51 / 24%);
+  outline-offset: 3px;
+}

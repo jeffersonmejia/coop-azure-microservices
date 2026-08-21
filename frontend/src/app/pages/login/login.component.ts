@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { FooterComponent } from '../../components/footer.component';
 
 @Component({
   selector: 'app-login',
@@ -18,33 +19,42 @@ import { AuthService } from '../../services/auth.service';
     MatInputModule,
     MatProgressSpinnerModule,
     RouterLink,
+    FooterComponent,
   ],
   template: `
     <div class="auth-container">
       <div class="auth-left">
-        <img src="vector/auth.svg" alt="Ilustración" class="auth-illustration" />
+        <div class="auth-story">
+          <span class="story-kicker"><mat-icon>diversity_3</mat-icon> Cooperativa de ahorro y crédito</span>
+          <h2>De nuestros socios,<br />para nuestros socios.</h2>
+          <p>Somos una organización propiedad de sus socios. Brindamos servicios financieros para apoyar el bienestar y crecimiento de nuestros miembros.</p>
+          <img src="vector/auth.svg" alt="Socio gestionando su cuenta cooperativa" class="auth-illustration" width="400" height="300" />
+        </div>
       </div>
       <div class="auth-right">
         <div class="auth-form">
+          <div class="auth-brand"><span><mat-icon>account_balance</mat-icon></span> Cooperativa <strong>EC</strong></div>
           <h1>Iniciar sesión</h1>
-          @if (errorMessage()) {
-            <div class="error-banner">
-              <mat-icon>error_outline</mat-icon>
-              <span>{{ errorMessage() }}</span>
-            </div>
-          }
-          <form (ngSubmit)="onSubmit()">
+          <p class="form-subtitle">Accede a tu cuenta en Cooperativa Ecuador</p>
+          <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)" novalidate>
             <mat-form-field appearance="outline">
               <mat-label>Correo electrónico</mat-label>
               <input
                 matInput
                 type="email"
                 name="email"
+                #emailField="ngModel"
                 [(ngModel)]="email"
                 required
+                email
                 autocomplete="email"
               />
               <mat-icon matPrefix>email</mat-icon>
+              @if (emailField.hasError('required')) {
+                <mat-error>Ingresa tu correo electrónico.</mat-error>
+              } @else if (emailField.hasError('email')) {
+                <mat-error>Escribe un correo válido, por ejemplo nombre&#64;correo.com.</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Contraseña</mat-label>
@@ -52,7 +62,9 @@ import { AuthService } from '../../services/auth.service';
                 matInput
                 [type]="hidePassword() ? 'password' : 'text'"
                 name="password"
+                #passwordField="ngModel"
                 [(ngModel)]="password"
+                (ngModelChange)="errorMessage.set('')"
                 required
                 autocomplete="current-password"
               />
@@ -65,7 +77,13 @@ import { AuthService } from '../../services/auth.service';
               >
                 <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
               </button>
+              @if (passwordField.hasError('required')) {
+                <mat-error>Ingresa tu contraseña.</mat-error>
+              }
             </mat-form-field>
+            @if (errorMessage()) {
+              <div class="field-error" role="alert">{{ errorMessage() }}</div>
+            }
             <button
               mat-flat-button
               color="primary"
@@ -89,134 +107,9 @@ import { AuthService } from '../../services/auth.service';
             <a routerLink="/register">Regístrate aquí</a>
           </p>
         </div>
+        <app-footer />
       </div>
     </div>
-  `,
-  styles: `
-    .auth-container {
-      display: flex;
-      min-height: 100vh;
-    }
-
-    .auth-left {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--coop-green-100);
-      padding: 40px;
-    }
-
-    .auth-illustration {
-      width: 100%;
-      max-width: 400px;
-      height: auto;
-    }
-
-    .auth-right {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-    }
-
-    .auth-form {
-      width: 100%;
-      max-width: 380px;
-    }
-
-    .auth-form h1 {
-      font-size: 32px;
-      font-weight: 500;
-      color: var(--coop-green-800);
-      margin-bottom: 32px;
-      text-align: center;
-      font-family: var(--coop-font);
-    }
-
-    .error-banner {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      margin-bottom: 20px;
-      background: var(--coop-error-bg);
-      border: 1px solid var(--coop-error-border);
-      border-radius: var(--coop-radius);
-      color: var(--coop-error);
-      font-size: 14px;
-      font-family: var(--coop-font);
-    }
-
-    .error-banner mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-      flex-shrink: 0;
-    }
-
-    .submit-btn {
-      width: 100%;
-      height: 48px;
-      font-size: 16px;
-      margin-top: 16px;
-      font-family: var(--coop-font);
-      background: var(--coop-green-100) !important;
-      color: var(--coop-green-800) !important;
-      border: none;
-    }
-
-    .submit-btn:hover {
-      background: var(--coop-green-200) !important;
-    }
-
-    .btn-content {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      line-height: 1;
-    }
-
-    .btn-content mat-icon {
-      font-size: 20px;
-      width: 20px;
-      height: 20px;
-      margin: 0;
-      vertical-align: middle;
-    }
-
-    .btn-spinner {
-      display: inline-block;
-    }
-
-    .switch-text {
-      text-align: center;
-      margin-top: 24px;
-      color: var(--coop-text-muted);
-      font-size: 14px;
-      font-family: var(--coop-font);
-    }
-
-    .switch-text a {
-      color: var(--coop-green-800);
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .switch-text a:hover {
-      text-decoration: underline;
-    }
-
-    @media (max-width: 768px) {
-      .auth-left {
-        display: none;
-      }
-
-      .auth-right {
-        padding: 24px;
-      }
-    }
   `,
 })
 export class LoginComponent {
@@ -229,8 +122,9 @@ export class LoginComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
-  onSubmit(): void {
-    if (!this.email || !this.password) {
+  onSubmit(form: NgForm): void {
+    if (form.invalid) {
+      form.control.markAllAsTouched();
       return;
     }
     this.errorMessage.set('');

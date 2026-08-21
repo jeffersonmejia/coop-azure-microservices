@@ -1,0 +1,36 @@
+:root {
+  /* Custom palette inspired by Google Account: quiet surfaces, strong readable ink. */
+  --coop-green-50: #f3f8f4;
+  --coop-green-100: #e9f3eb;
+  --coop-green-200: #d7eadb;
+  --coop-green-300: #b8d8c0;
+  --coop-green-400: #86bc94;
+  --coop-green-500: #4c9d61;
+  --coop-green-600: #23813f;
+  --coop-green-700: #176c33;
+  --coop-green-800: #115b2a;
+  --coop-green-900: #0b4720;
+  --coop-bg-start: #f3f7f4;
+  --coop-bg-mid: #f8faf8;
+  --coop-bg-end: #ffffff;
+  --coop-surface: #ffffff;
+  --coop-surface-variant: #f6f8f6;
+  --coop-text-primary: #3c4043;
+  --coop-text-secondary: #5f6368;
+  --coop-text-muted: #80868b;
+  --coop-accent: #176c33;
+  --coop-accent-hover: #115b2a;
+  --coop-action-bg: #dfe7e1;
+  --coop-action-bg-hover: #d2ddd4;
+  --coop-border: #e0e4e0;
+  --coop-border-light: #ecefec;
+  --coop-radius: 12px;
+  --coop-radius-lg: 20px;
+  --coop-radius-pill: 999px;
+  --coop-error: #b3261e;
+  --coop-error-bg: #fff1f0;
+  --coop-error-border: #f1c4c0;
+  --coop-font: 'Roboto Variable', Roboto, Arial, sans-serif;
+  --coop-ease: cubic-bezier(.2, 0, 0, 1);
+  --coop-footer-height: 48px;
+}

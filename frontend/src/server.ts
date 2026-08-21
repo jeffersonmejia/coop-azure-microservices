@@ -52,6 +52,7 @@ app.use('/api/payments', proxyTo(PAYMENT_SERVICE_URL));
 app.use(
   express.static(browserDistFolder, {
     maxAge: '1y',
+    immutable: true,
     index: false,
     redirect: false,
   }),

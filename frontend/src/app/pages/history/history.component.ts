@@ -3,7 +3,6 @@ import { Component, inject, OnInit } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule } from '@angular/material/table';
 import { TransactionResponse } from '../../models/api-models';
 import { AccountService } from '../../services/account.service';
@@ -17,20 +16,32 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     MatCardModule,
     MatIconModule,
     MatPaginatorModule,
-    MatProgressSpinnerModule,
     MatTableModule,
     NavBarComponent,
   ],
   template: `
     <app-nav-bar />
     <div class="page">
-      <h1 class="page-header">Historial de operaciones</h1>
+      <div class="history-heading">
+        <div>
+          <span class="eyebrow">Actividad de tu cuenta</span>
+          <h1 class="page-header">Movimientos</h1>
+          <p>Revisa tus pagos y transferencias recientes.</p>
+        </div>
+        <span class="history-icon"><mat-icon>receipt_long</mat-icon></span>
+      </div>
       <mat-card>
         <mat-card-content>
           @if (loading) {
-            <div class="empty">
-              <mat-spinner [diameter]="32" />
-              <span>Cargando...</span>
+            <div class="table-skeleton" aria-label="Cargando movimientos">
+              @for (item of skeletonRows; track item) {
+                <div class="skeleton-row">
+                  <span class="skeleton skeleton-date"></span>
+                  <span class="skeleton skeleton-type"></span>
+                  <span class="skeleton skeleton-amount"></span>
+                  <span class="skeleton skeleton-status"></span>
+                </div>
+              }
             </div>
           } @else if (!rows.length) {
             <div class="empty">
@@ -105,6 +116,18 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     .table-wrap {
       overflow-x: auto;
     }
+    .table-skeleton { padding: 4px 0; }
+    .skeleton-row { display: grid; grid-template-columns: 1.3fr .8fr 1fr .7fr; gap: 24px; align-items: center; min-height: 58px; padding: 0 8px; border-bottom: 1px solid var(--coop-border-light); }
+    .skeleton-row .skeleton { height: 13px; }
+    .skeleton-date { width: 80%; }
+    .skeleton-type { width: 70%; }
+    .skeleton-amount { width: 75%; }
+    .skeleton-status { width: 82%; height: 24px !important; border-radius: 999px; }
+    .history-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+    .history-heading p { margin: 6px 0 0; color: var(--coop-text-secondary); }
+    .eyebrow { display: block; margin-bottom: 8px; color: var(--coop-accent); font-size: 13px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; }
+    .history-icon { display: grid; width: 54px; height: 54px; place-items: center; border-radius: 18px; color: var(--coop-accent); background: var(--coop-green-100); }
+    .history-icon mat-icon { width: 26px; height: 26px; font-size: 26px; }
 
     .empty {
       display: flex;
@@ -162,9 +185,13 @@ import { NavBarComponent } from '../../components/nav-bar.component';
       background: var(--coop-error-bg);
       color: var(--coop-error);
     }
+    table { width: 100%; }
+    tr.mat-mdc-row { transition: background 150ms var(--coop-ease); }
+    tr.mat-mdc-row:hover { background: var(--coop-green-50); }
   `,
 })
 export class HistoryComponent implements OnInit {
+  readonly skeletonRows = [1, 2, 3, 4, 5];
   displayedColumns = ['occurredAt', 'type', 'amount', 'source', 'destination', 'status'];
   rows: TransactionResponse[] = [];
   totalElements = 0;

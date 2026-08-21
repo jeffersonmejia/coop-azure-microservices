@@ -15,9 +15,9 @@ import { FooterComponent } from './components/footer.component';
     ]),
   ],
   template: `
-    <div [@routeAnimation]="getRouteAnimationData()">
+    <main [@routeAnimation]="getRouteAnimationData()">
       <router-outlet />
-    </div>
+    </main>
     <app-footer />
   `,
 })

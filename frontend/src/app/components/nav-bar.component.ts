@@ -9,20 +9,20 @@ import { AuthService } from '../services/auth.service';
   imports: [MatIconModule, MatTooltipModule, RouterLink, RouterLinkActive],
   template: `
     <nav class="navbar">
-      <div class="nav-brand">
-        <mat-icon class="brand-icon">account_balance</mat-icon>
-        <span class="brand-text">Cooperativa Ecuador</span>
-      </div>
+      <a class="nav-brand" routerLink="/dashboard" aria-label="Ir al resumen">
+        <span class="brand-mark"><mat-icon class="brand-icon">account_balance</mat-icon></span>
+        <span class="brand-text">Cooperativa <strong>EC</strong></span>
+      </a>
       <div class="nav-links">
-        <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-link" matTooltip="Resumen">
           <mat-icon>dashboard</mat-icon>
           <span>Dashboard</span>
         </a>
-        <a routerLink="/transfer" routerLinkActive="active" class="nav-link">
+        <a routerLink="/transfer" routerLinkActive="active" class="nav-link" matTooltip="Transferir">
           <mat-icon>swap_horiz</mat-icon>
           <span>Transferencia</span>
         </a>
-        <a routerLink="/history" routerLinkActive="active" class="nav-link">
+        <a routerLink="/history" routerLinkActive="active" class="nav-link" matTooltip="Movimientos">
           <mat-icon>history</mat-icon>
           <span>Historial</span>
         </a>
@@ -39,9 +39,10 @@ import { AuthService } from '../services/auth.service';
       align-items: center;
       justify-content: space-between;
       padding: 0 32px;
-      height: 64px;
-      background: var(--coop-surface);
-      box-shadow: var(--coop-shadow-sm);
+      height: 72px;
+      background: rgb(255 255 255 / 88%);
+      border-bottom: 1px solid rgb(220 229 222 / 80%);
+      backdrop-filter: blur(16px);
       position: sticky;
       top: 0;
       z-index: 1000;
@@ -51,22 +52,27 @@ import { AuthService } from '../services/auth.service';
     .nav-brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      color: inherit;
+      text-decoration: none;
     }
 
+    .brand-mark { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid var(--coop-accent); border-radius: 12px; background: var(--coop-accent); }
+
     .brand-icon {
-      color: var(--coop-accent);
-      font-size: 28px;
-      width: 28px;
-      height: 28px;
+      color: #fff;
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
     }
 
     .brand-text {
-      font-size: 18px;
-      font-weight: 500;
-      color: var(--coop-green-800);
-      letter-spacing: 0.3px;
+      font-size: 17px;
+      font-weight: 450;
+      color: var(--coop-text-primary);
+      letter-spacing: -0.01em;
     }
+    .brand-text strong { color: var(--coop-accent); font-weight: 700; }
 
     .nav-links {
       display: flex;
@@ -79,7 +85,7 @@ import { AuthService } from '../services/auth.service';
       align-items: center;
       gap: 6px;
       padding: 8px 16px;
-      border-radius: var(--coop-radius-pill);
+      border-radius: 12px;
       border: none;
       background: none;
       color: var(--coop-text-secondary);
@@ -87,17 +93,18 @@ import { AuthService } from '../services/auth.service';
       font-weight: 500;
       cursor: pointer;
       text-decoration: none;
-      transition: all 0.2s ease;
+      transition: color 160ms var(--coop-ease), background 160ms var(--coop-ease), transform 160ms var(--coop-ease);
       font-family: var(--coop-font);
     }
 
     .nav-link:hover {
       background: var(--coop-green-50);
       color: var(--coop-accent);
+      transform: translateY(-1px);
     }
 
     .nav-link.active {
-      background: var(--coop-green-50);
+      background: var(--coop-green-100);
       color: var(--coop-accent);
     }
 
@@ -105,6 +112,14 @@ import { AuthService } from '../services/auth.service';
       font-size: 20px;
       width: 20px;
       height: 20px;
+    }
+
+    @media (max-width: 720px) {
+      .navbar { height: 64px; padding: 0 14px; }
+      .brand-text { display: none; }
+      .nav-links { gap: 2px; }
+      .nav-link { padding: 10px; }
+      .nav-link span { display: none; }
     }
   `,
 })

@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -28,17 +28,20 @@ import { NavBarComponent } from '../../components/nav-bar.component';
       <div class="transfer-header">
         <div class="transfer-text">
           <h1 class="page-header">Transferencia</h1>
-          <p class="transfer-sub">Envía dinero a otra cuenta de forma segura</p>
+          <p class="transfer-sub">Realiza movimientos entre cuentas de manera simple</p>
         </div>
-        <img src="vector/account.svg" alt="Transferencia" class="transfer-illustration" />
+        <img src="vector/account.svg" alt="Ilustración de movimiento entre cuentas" class="transfer-illustration" width="140" height="110" />
       </div>
       <mat-card>
         <mat-card-content>
-          <form (ngSubmit)="submit()">
+          <form #transferForm="ngForm" (ngSubmit)="submit(transferForm)" novalidate>
             <mat-form-field appearance="outline">
               <mat-label>Cuenta destino</mat-label>
-              <input matInput name="destination" [(ngModel)]="destination" required />
+              <input matInput name="destination" #destinationField="ngModel" [(ngModel)]="destination" required />
               <mat-icon matPrefix>account_balance</mat-icon>
+              @if (destinationField.hasError('required')) {
+                <mat-error>Ingresa el número de la cuenta destino.</mat-error>
+              }
             </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Monto</mat-label>
@@ -48,10 +51,16 @@ import { NavBarComponent } from '../../components/nav-bar.component';
                 min="0.01"
                 step="0.01"
                 name="amount"
+                #amountField="ngModel"
                 [(ngModel)]="amount"
                 required
               />
               <mat-icon matPrefix>attach_money</mat-icon>
+              @if (amountField.hasError('required')) {
+                <mat-error>Ingresa el monto que deseas transferir.</mat-error>
+              } @else if (amountField.hasError('min')) {
+                <mat-error>El monto debe ser mayor a cero.</mat-error>
+              }
             </mat-form-field>
             <button
               mat-flat-button
@@ -86,6 +95,7 @@ import { NavBarComponent } from '../../components/nav-bar.component';
       align-items: center;
       justify-content: space-between;
       margin-bottom: 24px;
+      max-width: 640px;
     }
 
     .transfer-text {
@@ -105,8 +115,8 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     }
 
     mat-card {
-      max-width: 480px;
-      padding: 24px;
+      max-width: 560px;
+      padding: 16px;
     }
 
     .submit-btn {
@@ -117,13 +127,7 @@ import { NavBarComponent } from '../../components/nav-bar.component';
       width: 100%;
       height: 48px;
       font-family: var(--coop-font);
-      background: var(--coop-green-100) !important;
-      color: var(--coop-green-800) !important;
       border: none;
-    }
-
-    .submit-btn:hover {
-      background: var(--coop-green-200) !important;
     }
 
     .btn-content {
@@ -144,6 +148,10 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     .btn-spinner {
       display: inline-block;
     }
+    @media (max-width: 520px) {
+      .transfer-illustration { width: 100px; }
+      mat-card { padding: 4px; }
+    }
   `,
 })
 export class TransferComponent {
@@ -154,8 +162,9 @@ export class TransferComponent {
   private readonly accountService = inject(AccountService);
   private readonly snackBar = inject(MatSnackBar);
 
-  submit(): void {
-    if (!this.destination || !this.amount) {
+  submit(form: NgForm): void {
+    if (form.invalid || this.amount === null) {
+      form.control.markAllAsTouched();
       return;
     }
     this.submitting.set(true);
