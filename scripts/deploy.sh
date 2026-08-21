@@ -1,48 +1,41 @@
 #!/bin/bash
 set -euo pipefail
 
-RESOURCE_GROUP="rg-coop-dev"
-LOCATION="eastus"
-ENVIRONMENT="dev"
-PROJECT="coop"
-ACR_NAME="acr${PROJECT}${ENVIRONMENT}"
+ACTION="${1:-plan}"
+TERRAFORM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../infrastructure" && pwd)"
+PLAN_FILE="$TERRAFORM_DIR/dev.tfplan"
 
-echo "=== Validating Bicep templates ==="
-az bicep build --file infrastructure/main.bicep
-az deployment group validate \
-  --resource-group "$RESOURCE_GROUP" \
-  --template-file infrastructure/main.bicep \
-  --parameters infrastructure/parameters/dev.bicepparam
+if command -v terraform >/dev/null 2>&1; then
+  TERRAFORM_BIN="$(command -v terraform)"
+elif [[ -x "$HOME/.local/bin/terraform" ]]; then
+  TERRAFORM_BIN="$HOME/.local/bin/terraform"
+else
+  echo "terraform is required and was not found in PATH" >&2
+  exit 1
+fi
 
-echo "=== Creating resource group ==="
-az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --output none
+"$TERRAFORM_BIN" -chdir="$TERRAFORM_DIR" init -input=false
+"$TERRAFORM_BIN" -chdir="$TERRAFORM_DIR" validate
 
-echo "=== Deploying infrastructure ==="
-az deployment group create \
-  --resource-group "$RESOURCE_GROUP" \
-  --template-file infrastructure/main.bicep \
-  --parameters infrastructure/parameters/dev.bicepparam \
-  --output table
-
-echo "=== Building and pushing Docker images ==="
-az acr login --name "$ACR_NAME"
-
-docker build -t "$ACR_NAME.azurecr.io/coop-frontend:latest" ./frontend
-docker push "$ACR_NAME.azurecr.io/coop-frontend:latest"
-
-docker build -t "$ACR_NAME.azurecr.io/coop-auth:latest" ./services/auth-service
-docker push "$ACR_NAME.azurecr.io/coop-auth:latest"
-
-docker build -t "$ACR_NAME.azurecr.io/coop-account:latest" ./services/account-service
-docker push "$ACR_NAME.azurecr.io/coop-account:latest"
-
-docker build -t "$ACR_NAME.azurecr.io/coop-payment:latest" ./services/payment-service
-docker push "$ACR_NAME.azurecr.io/coop-payment:latest"
-
-echo "=== Restarting container apps ==="
-for app in ca-coop-dev-frontend ca-coop-dev-auth ca-coop-dev-account ca-coop-dev-payment; do
-  az containerapp restart --name "$app" --resource-group "$RESOURCE_GROUP" --output none
-done
-
-echo "=== Deployment complete ==="
-az containerapp list --resource-group "$RESOURCE_GROUP" --query "[].{Name:name, Fqdn:properties.configuration.ingress.fqdn}" --output table
+case "$ACTION" in
+  validate)
+    ;;
+  plan)
+    "$TERRAFORM_BIN" -chdir="$TERRAFORM_DIR" plan \
+      -input=false \
+      -var-file=dev.tfvars \
+      -out="$PLAN_FILE"
+    echo "Plan saved to $PLAN_FILE. Review it with: terraform -chdir=infrastructure show dev.tfplan"
+    ;;
+  apply)
+    if [[ ! -f "$PLAN_FILE" ]]; then
+      echo "No reviewed plan exists at $PLAN_FILE. Run '$0 plan' first." >&2
+      exit 1
+    fi
+    "$TERRAFORM_BIN" -chdir="$TERRAFORM_DIR" apply "$PLAN_FILE"
+    ;;
+  *)
+    echo "Usage: $0 [validate|plan|apply]" >&2
+    exit 1
+    ;;
+esac

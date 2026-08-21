@@ -83,7 +83,17 @@ application-local.yaml
 .DS_Store
 Thumbs.db
 
-# Bicep compiled output
+# Terraform local state, plans, providers and secrets
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.auto.tfvars
+!*.auto.tfvars.example
+crash.log
+crash.*.log
+
+# Legacy generated ARM templates
 infrastructure/**/*.json
 !infrastructure/**/package.json
 !infrastructure/**/package-lock.json
