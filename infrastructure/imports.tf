@@ -38,11 +38,6 @@ import {
 }
 
 import {
-  to = module.observability.azurerm_monitor_action_group.smart_detection
-  id = "/subscriptions/${var.subscription_id}/resourceGroups/${var.apps_resource_group_name}/providers/Microsoft.Insights/actionGroups/Application Insights Smart Detection"
-}
-
-import {
   to = module.key_vault.azurerm_key_vault.this
   id = "/subscriptions/${var.subscription_id}/resourceGroups/${var.apps_resource_group_name}/providers/Microsoft.KeyVault/vaults/kvcoopdev-scus"
 }
@@ -85,6 +80,21 @@ import {
 import {
   to = module.postgresql.azurerm_postgresql_flexible_server_firewall_rule.azure_services
   id = "/subscriptions/${var.subscription_id}/resourceGroups/${var.database_resource_group_name}/providers/Microsoft.DBforPostgreSQL/flexibleServers/psql-coop-dev/firewallRules/AllowAzureServices"
+}
+
+import {
+  to = module.service_bus.azurerm_servicebus_namespace.this
+  id = "/subscriptions/${var.subscription_id}/resourceGroups/${var.apps_resource_group_name}/providers/Microsoft.ServiceBus/namespaces/sb-coop-dev-d5174d35"
+}
+
+import {
+  to = module.service_bus.azurerm_servicebus_queue.payment_requests
+  id = "/subscriptions/${var.subscription_id}/resourceGroups/${var.apps_resource_group_name}/providers/Microsoft.ServiceBus/namespaces/sb-coop-dev-d5174d35/queues/payment-requests"
+}
+
+import {
+  to = module.service_bus.azurerm_servicebus_queue.payment_results
+  id = "/subscriptions/${var.subscription_id}/resourceGroups/${var.apps_resource_group_name}/providers/Microsoft.ServiceBus/namespaces/sb-coop-dev-d5174d35/queues/payment-results"
 }
 
 import {

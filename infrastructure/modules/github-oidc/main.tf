@@ -16,6 +16,7 @@ resource "azuread_application" "this" {
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes  = all
   }
 }
 
@@ -26,6 +27,7 @@ resource "azuread_service_principal" "this" {
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes  = all
   }
 }
 
@@ -39,6 +41,7 @@ resource "azuread_application_federated_identity_credential" "main" {
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes  = all
   }
 }
 
@@ -52,6 +55,7 @@ resource "azuread_application_federated_identity_credential" "staging" {
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes  = all
   }
 }
 
@@ -65,6 +69,7 @@ resource "azuread_application_federated_identity_credential" "production" {
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes  = all
   }
 }
 

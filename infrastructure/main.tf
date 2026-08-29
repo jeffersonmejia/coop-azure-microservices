@@ -38,7 +38,6 @@ module "observability" {
   location                  = var.apps_location
   log_analytics_name        = local.names.log_analytics
   application_insights_name = local.names.application_insights
-  action_group_name         = local.names.action_group
   tags                      = local.apps_tags
 }
 

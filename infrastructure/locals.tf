@@ -4,7 +4,6 @@ locals {
     identity                  = "id-${var.project_name}-${var.environment_name}-acr-pull"
     log_analytics             = "law-${var.project_name}-${var.environment_name}"
     application_insights      = "appi-${var.project_name}-${var.environment_name}"
-    action_group              = "Application Insights Smart Detection"
     key_vault                 = "kv${var.project_name}${var.environment_name}-scus"
     container_app_environment = "cae-${var.project_name}-${var.environment_name}"
     postgres                  = "psql-${var.project_name}-${var.environment_name}"
