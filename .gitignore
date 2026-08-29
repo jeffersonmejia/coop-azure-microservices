@@ -33,6 +33,7 @@ replay_pid*
 # =========================
 
 .local/
+AGENTS.md
 
 .env
 .env.*

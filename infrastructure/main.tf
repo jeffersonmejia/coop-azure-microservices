@@ -73,6 +73,16 @@ module "postgresql" {
   tags                   = local.database_tags
 }
 
+module "service_bus" {
+  source = "./modules/service-bus"
+
+  name                = local.names.service_bus
+  resource_group_name = module.apps_resource_group.name
+  location            = var.apps_location
+  principal_id        = module.container_identity.principal_id
+  tags                = local.apps_tags
+}
+
 module "auth_container_app" {
   source = "./modules/container-app"
 
@@ -109,7 +119,12 @@ module "account_container_app" {
   image                        = var.container_images.account
   target_port                  = 8082
   max_replicas                 = 3
-  environment_variables        = merge(local.backend_common_environment, { SERVER_PORT = "8082" })
+  environment_variables = merge(local.backend_common_environment, {
+    SERVER_PORT                          = "8082"
+    SERVICEBUS_FULLY_QUALIFIED_NAMESPACE = module.service_bus.fully_qualified_namespace
+    SERVICEBUS_PAYMENT_REQUESTS_QUEUE    = module.service_bus.payment_requests_queue_name
+    SERVICEBUS_PAYMENT_RESULTS_QUEUE     = module.service_bus.payment_results_queue_name
+  })
   secret_environment_variables = {
     SPRING_DATASOURCE_PASSWORD = {
       secret_name = "db-password"
@@ -135,8 +150,11 @@ module "payment_container_app" {
   target_port                  = 8083
   max_replicas                 = 3
   environment_variables = merge(local.backend_common_environment, {
-    SERVER_PORT         = "8083"
-    ACCOUNT_SERVICE_URL = "https://${module.account_container_app.fqdn}"
+    SERVER_PORT                          = "8083"
+    ACCOUNT_SERVICE_URL                  = "https://${module.account_container_app.fqdn}"
+    SERVICEBUS_FULLY_QUALIFIED_NAMESPACE = module.service_bus.fully_qualified_namespace
+    SERVICEBUS_PAYMENT_REQUESTS_QUEUE    = module.service_bus.payment_requests_queue_name
+    SERVICEBUS_PAYMENT_RESULTS_QUEUE     = module.service_bus.payment_results_queue_name
   })
   secret_environment_variables = {
     SPRING_DATASOURCE_PASSWORD = {

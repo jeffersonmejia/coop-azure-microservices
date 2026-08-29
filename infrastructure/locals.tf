@@ -9,6 +9,7 @@ locals {
     container_app_environment = "cae-${var.project_name}-${var.environment_name}"
     postgres                  = "psql-${var.project_name}-${var.environment_name}"
     database                  = "coop"
+    service_bus               = "sb-${var.project_name}-${var.environment_name}-${substr(var.subscription_id, 0, 8)}"
   }
 
   apps_tags = {

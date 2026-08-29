@@ -273,12 +273,6 @@ jobs:
           echo "Deploying image:"
           echo "$IMAGE"
 
-          # Build extra env vars for dependent services
-          EXTRA_SET_ENV_ARGS=()
-          if [ -n "${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}" ]; then
-            EXTRA_SET_ENV_ARGS+=(--set-env-vars "ACCOUNT_SERVICE_URL=${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}")
-          fi
-
           if az containerapp show \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
@@ -289,50 +283,11 @@ jobs:
             az containerapp update \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --image "$IMAGE" \
-              ${EXTRA_SET_ENV_ARGS[@]+"${EXTRA_SET_ENV_ARGS[@]}"}
+              --image "$IMAGE"
 
           else
-
-            echo "Container App does not exist. Creating..."
-
-            CAE_ID=$(az containerapp env show \
-              --name "cae-coop-dev" \
-              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --query "id" \
-              -o tsv)
-
-            IDENTITY_ID=$(az identity show \
-              --name "id-coop-dev-acr-pull" \
-              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --query "id" \
-              -o tsv)
-
-            EXTRA_CREATE_ENV=""
-            if [ -n "${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}" ]; then
-              EXTRA_CREATE_ENV="ACCOUNT_SERVICE_URL=${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}"
-            fi
-
-            az containerapp create \
-              --name "${{ inputs.container-app-name }}" \
-              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --environment "$CAE_ID" \
-              --image "$IMAGE" \
-              --ingress external \
-              --target-port ${{ inputs.server-port }} \
-              --transport http \
-              --min-replicas 1 \
-              --max-replicas 3 \
-              --registry-server "${{ env.AZURE_ACR_NAME }}.azurecr.io" \
-              --registry-identity "$IDENTITY_ID" \
-              --user-assigned "$IDENTITY_ID" \
-              --env-vars \
-                "SERVER_PORT=${{ inputs.server-port }}" \
-                "SPRING_DATASOURCE_URL=jdbc:postgresql://psql-coop-dev.postgres.database.azure.com:5432/coop?sslmode=require" \
-                "SPRING_DATASOURCE_USERNAME=coopadmin" \
-                "SPRING_DATASOURCE_PASSWORD=${{ secrets.AZURE_DB_PASSWORD }}" \
-                "JWT_SECRET=dev-jwt-secret-change-in-prod" \
-                ${EXTRA_CREATE_ENV:+"$EXTRA_CREATE_ENV"}
+            echo "Container App does not exist. Apply infrastructure before deploying an image."
+            exit 1
 
           fi
 
@@ -727,12 +682,6 @@ jobs:
           echo "Deploying image:"
           echo "$IMAGE"
 
-          # Build extra env vars for dependent services
-          EXTRA_SET_ENV_ARGS=()
-          if [ -n "${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}" ]; then
-            EXTRA_SET_ENV_ARGS+=(--set-env-vars "ACCOUNT_SERVICE_URL=${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}")
-          fi
-
           if az containerapp show \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
@@ -743,50 +692,11 @@ jobs:
             az containerapp update \
               --name "${{ inputs.container-app-name }}" \
               --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --image "$IMAGE" \
-              ${EXTRA_SET_ENV_ARGS[@]+"${EXTRA_SET_ENV_ARGS[@]}"}
+              --image "$IMAGE"
 
           else
-
-            echo "Container App does not exist. Creating..."
-
-            CAE_ID=$(az containerapp env show \
-              --name "cae-coop-dev" \
-              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --query "id" \
-              -o tsv)
-
-            IDENTITY_ID=$(az identity show \
-              --name "id-coop-dev-acr-pull" \
-              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --query "id" \
-              -o tsv)
-
-            EXTRA_CREATE_ENV=""
-            if [ -n "${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}" ]; then
-              EXTRA_CREATE_ENV="ACCOUNT_SERVICE_URL=${{ steps.resolve-urls.outputs.ACCOUNT_SERVICE_URL }}"
-            fi
-
-            az containerapp create \
-              --name "${{ inputs.container-app-name }}" \
-              --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
-              --environment "$CAE_ID" \
-              --image "$IMAGE" \
-              --ingress external \
-              --target-port ${{ inputs.server-port }} \
-              --transport http \
-              --min-replicas 1 \
-              --max-replicas 3 \
-              --registry-server "${{ env.AZURE_ACR_NAME }}.azurecr.io" \
-              --registry-identity "$IDENTITY_ID" \
-              --user-assigned "$IDENTITY_ID" \
-              --env-vars \
-                "SERVER_PORT=${{ inputs.server-port }}" \
-                "SPRING_DATASOURCE_URL=jdbc:postgresql://psql-coop-dev.postgres.database.azure.com:5432/coop?sslmode=require" \
-                "SPRING_DATASOURCE_USERNAME=coopadmin" \
-                "SPRING_DATASOURCE_PASSWORD=${{ secrets.AZURE_DB_PASSWORD }}" \
-                "JWT_SECRET=dev-jwt-secret-change-in-prod" \
-                ${EXTRA_CREATE_ENV:+"$EXTRA_CREATE_ENV"}
+            echo "Container App does not exist. Apply infrastructure before deploying an image."
+            exit 1
 
           fi
 

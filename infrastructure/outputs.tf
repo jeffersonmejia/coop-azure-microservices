@@ -24,3 +24,12 @@ output "github_actions_client_id" {
 output "postgresql_fqdn" {
   value = module.postgresql.fqdn
 }
+
+output "service_bus" {
+  description = "Service Bus endpoint and queues used by the payment workflow."
+  value = {
+    fully_qualified_namespace = module.service_bus.fully_qualified_namespace
+    payment_requests_queue    = module.service_bus.payment_requests_queue_name
+    payment_results_queue     = module.service_bus.payment_results_queue_name
+  }
+}
