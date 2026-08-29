@@ -55,6 +55,19 @@ resource "azuread_application_federated_identity_credential" "staging" {
   }
 }
 
+resource "azuread_application_federated_identity_credential" "production" {
+  application_id = azuread_application.this.id
+  display_name   = "github-production-env"
+  description    = "GitHub Actions OIDC for the production environment"
+  audiences      = ["api://AzureADTokenExchange"]
+  issuer         = "https://token.actions.githubusercontent.com"
+  subject        = "${var.oidc_subject_prefix}:environment:production"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "azurerm_role_assignment" "contributor" {
   scope                = "/subscriptions/${var.subscription_id}"
   role_definition_name = "Contributor"

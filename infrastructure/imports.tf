@@ -108,6 +108,11 @@ import {
 }
 
 import {
+  to = module.github_oidc.azuread_application_federated_identity_credential.production
+  id = "845a8ede-53be-46cf-931f-1a105c8ef28c/federatedIdentityCredential/f99cef0e-dd5c-4f89-b4b8-020cc4ad9e85"
+}
+
+import {
   to = module.github_oidc.azurerm_role_assignment.contributor
   id = "/subscriptions/${var.subscription_id}/providers/Microsoft.Authorization/roleAssignments/cfe68fc9-657f-448a-886d-d33e5be9ce7f"
 }
