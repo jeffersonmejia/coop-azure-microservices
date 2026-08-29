@@ -39,7 +39,7 @@ import {
 
 import {
   to = module.observability.azurerm_monitor_action_group.smart_detection
-  id = "/subscriptions/${var.subscription_id}/resourceGroups/${var.apps_resource_group_name}/providers/microsoft.insights/actionGroups/Application Insights Smart Detection"
+  id = "/subscriptions/${var.subscription_id}/resourceGroups/${var.apps_resource_group_name}/providers/Microsoft.Insights/actionGroups/Application Insights Smart Detection"
 }
 
 import {
@@ -89,12 +89,12 @@ import {
 
 import {
   to = module.github_oidc.azuread_application.this
-  id = "845a8ede-53be-46cf-931f-1a105c8ef28c"
+  id = "/applications/845a8ede-53be-46cf-931f-1a105c8ef28c"
 }
 
 import {
   to = module.github_oidc.azuread_service_principal.this
-  id = "c0fd3aa2-446d-4e43-bbcf-406b02899748"
+  id = "/servicePrincipals/c0fd3aa2-446d-4e43-bbcf-406b02899748"
 }
 
 import {
