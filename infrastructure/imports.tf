@@ -99,12 +99,12 @@ import {
 
 import {
   to = module.github_oidc.azuread_application_federated_identity_credential.main
-  id = "/applications/845a8ede-53be-46cf-931f-1a105c8ef28c/federatedIdentityCredentials/90f05d11-8516-4cbf-bb8c-cbaa725394c3"
+  id = "845a8ede-53be-46cf-931f-1a105c8ef28c/federatedIdentityCredentials/90f05d11-8516-4cbf-bb8c-cbaa725394c3"
 }
 
 import {
   to = module.github_oidc.azuread_application_federated_identity_credential.staging
-  id = "/applications/845a8ede-53be-46cf-931f-1a105c8ef28c/federatedIdentityCredentials/e8b41669-9f7d-439b-9a43-a9af827e3d00"
+  id = "845a8ede-53be-46cf-931f-1a105c8ef28c/federatedIdentityCredentials/e8b41669-9f7d-439b-9a43-a9af827e3d00"
 }
 
 import {
