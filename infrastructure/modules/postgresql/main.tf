@@ -20,6 +20,8 @@ variable "administrator_login" {
 
 variable "administrator_password" {
   type      = string
+  default   = null
+  nullable  = true
   sensitive = true
 }
 
@@ -33,7 +35,7 @@ resource "azurerm_postgresql_flexible_server" "this" {
   location                      = var.location
   version                       = "17"
   administrator_login           = var.administrator_login
-  administrator_password        = var.administrator_password
+  administrator_password        = var.administrator_password == null ? null : var.administrator_password
   sku_name                      = "B_Standard_B1ms"
   storage_mb                    = 32768
   storage_tier                  = "P4"

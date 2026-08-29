@@ -98,6 +98,16 @@ import {
 }
 
 import {
+  to = module.service_bus.azurerm_role_assignment.sender
+  id = "/subscriptions/${var.subscription_id}/resourceGroups/${var.apps_resource_group_name}/providers/Microsoft.ServiceBus/namespaces/sb-coop-dev-d5174d35/providers/Microsoft.Authorization/roleAssignments/126ed3fc6616aadaef1d7960f5181407"
+}
+
+import {
+  to = module.service_bus.azurerm_role_assignment.receiver
+  id = "/subscriptions/${var.subscription_id}/resourceGroups/${var.apps_resource_group_name}/providers/Microsoft.ServiceBus/namespaces/sb-coop-dev-d5174d35/providers/Microsoft.Authorization/roleAssignments/71378b249c30ee6ba214d4bce09a5e12"
+}
+
+import {
   to = module.github_oidc.azuread_application.this
   id = "/applications/845a8ede-53be-46cf-931f-1a105c8ef28c"
 }
