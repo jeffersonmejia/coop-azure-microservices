@@ -1,12 +1,6 @@
 name: Service - Account
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'services/account-service/**'
-      - '.github/workflows/account-service.yml'
-      - '.github/workflows/_backend-service.yml'
   workflow_dispatch:
     inputs:
       deploy_to:
