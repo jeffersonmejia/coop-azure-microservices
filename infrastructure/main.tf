@@ -180,8 +180,10 @@ module "frontend_container_app" {
   target_port                  = 4200
   max_replicas                 = 2
   environment_variables = {
-    NG_ALLOWED_HOSTS = "ca-${var.project_name}-${var.environment_name}-frontend.calmocean-039ebd3e.${var.apps_location}.azurecontainerapps.io"
-    AUTH_SERVICE_URL = "https://${module.auth_container_app.fqdn}"
+    NG_ALLOWED_HOSTS      = "ca-${var.project_name}-${var.environment_name}-frontend.calmocean-039ebd3e.${var.apps_location}.azurecontainerapps.io"
+    AUTH_SERVICE_URL      = "https://${module.auth_container_app.fqdn}"
+    ACCOUNT_SERVICE_URL   = "https://${module.account_container_app.fqdn}"
+    PAYMENT_SERVICE_URL   = "https://${module.payment_container_app.fqdn}"
   }
 }
 
