@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -37,7 +37,7 @@ import { FooterComponent } from '../../components/footer.component';
           <div class="auth-brand"><span><mat-icon>account_balance</mat-icon></span> Cooperativa <strong>EC</strong></div>
           <h1>Iniciar sesión</h1>
           <p class="form-subtitle">Accede a tu cuenta en Cooperativa Ecuador</p>
-          <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)" novalidate>
+          <form #loginForm="ngForm" #loginFormElement autocomplete="on" (ngSubmit)="onSubmit(loginForm)" novalidate>
             <mat-form-field appearance="outline">
               <mat-label>Correo electrónico</mat-label>
               <input
@@ -126,6 +126,7 @@ export class LoginComponent implements OnInit {
 
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  @ViewChild('loginFormElement') private loginFormElement?: ElementRef<HTMLFormElement>;
 
   ngOnInit(): void {
     this.email = this.auth.getRememberedEmail();
@@ -142,6 +143,7 @@ export class LoginComponent implements OnInit {
     this.auth.login(this.email, this.password, this.rememberMe).subscribe({
       next: () => {
         this.loading.set(false);
+        this.saveBrowserCredential();
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
@@ -150,5 +152,25 @@ export class LoginComponent implements OnInit {
         this.errorMessage.set(msg);
       },
     });
+  }
+
+  private saveBrowserCredential(): void {
+    if (!this.rememberMe || !this.loginFormElement || typeof window === 'undefined') {
+      return;
+    }
+
+    const PasswordCredential = (window as typeof window & {
+      PasswordCredential?: new (form: HTMLFormElement) => Credential;
+    }).PasswordCredential;
+
+    const credentials = (navigator as Navigator & {
+      credentials?: { store: (credential: Credential) => Promise<unknown> };
+    }).credentials;
+
+    if (!PasswordCredential || !credentials) {
+      return;
+    }
+
+    void credentials.store(new PasswordCredential(this.loginFormElement.nativeElement)).catch(() => undefined);
   }
 }

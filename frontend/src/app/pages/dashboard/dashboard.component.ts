@@ -32,7 +32,7 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     <div class="page">
       <div class="welcome-section">
         <div class="welcome-text">
-          <h1 class="page-header">Hola, {{ user?.firstName || 'bienvenido' }}</h1>
+          <h1 class="page-header">Hola, {{ getDisplayName(user) || 'bienvenido' }}</h1>
           <p class="welcome-sub">Servicios pensados para ti y nuestra comunidad.</p>
         </div>
         <img src="vector/payments.svg" alt="Ilustración de pagos digitales" class="welcome-illustration" width="160" height="120" />
@@ -170,7 +170,7 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     .dashboard-toggle { display: flex; gap: 6px; padding: 10px; border-bottom: 1px solid var(--coop-border-light); background: var(--coop-surface-variant); }
     .dashboard-toggle button { min-height: 40px; padding: 0 18px; border-radius: 10px; color: var(--coop-text-secondary); font-weight: 560; }
     .dashboard-toggle button.active { color: var(--coop-green-900); background: #fff; box-shadow: 0 1px 3px rgb(20 56 31 / 10%); }
-    .dashboard-view { min-height: 276px; padding: 28px; }
+    .dashboard-view { min-height: 240px; padding: 28px; }
     .dashboard-feedback, .account-feedback { padding: 12px 14px; border: 1px solid var(--coop-error-border); border-radius: var(--coop-radius); color: var(--coop-error); background: var(--coop-error-bg); font-size: 14px; line-height: 1.4; }
     .dashboard-feedback { margin: -12px 0 20px; }
     .account-feedback { min-height: 197px; box-sizing: border-box; }
@@ -183,7 +183,9 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     .skeleton-balance { width: 72%; height: 42px; margin-top: 58px !important; }
 
     .account-card {
-      min-height: 245px;
+      width: min(100%, 360px);
+      min-height: 196px;
+      box-sizing: border-box;
       overflow: hidden;
       color: #fff;
       background: linear-gradient(145deg, #1e7b3d, #145b2c) !important;
@@ -193,7 +195,7 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     .account-card::after { content: ''; position: absolute; width: 210px; height: 210px; right: -75px; bottom: -100px; border: 42px solid rgb(255 255 255 / 9%); border-radius: 50%; }
     .account-card mat-card-title, .account-card mat-card-subtitle { color: #fff; }
     .account-card mat-card-subtitle { opacity: .72; }
-    .account-card mat-card-content { position: relative; z-index: 1; padding-top: 44px !important; }
+    .account-card mat-card-content { position: relative; z-index: 1; padding-top: 28px !important; }
     .account-card:hover { transform: translateY(-2px); }
 
     .account-number {
@@ -212,7 +214,7 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     .balance mat-icon { width: 18px; height: 18px; font-size: 18px; }
 
     .balance-value {
-      font-size: 40px;
+      font-size: 34px;
       font-weight: 500;
       margin-top: 8px;
       color: #fff;
@@ -352,5 +354,14 @@ export class DashboardComponent implements OnInit {
       CLOSED: 'cerrada',
     };
     return labels[status] ?? status;
+  }
+
+  getDisplayName(user: UserResponse | null): string {
+    if (!user) {
+      return '';
+    }
+    const firstName = user.firstName.trim().split(/\s+/)[0] ?? '';
+    const lastName = user.lastName.trim().split(/\s+/)[0] ?? '';
+    return `${firstName} ${lastName}`.trim();
   }
 }
