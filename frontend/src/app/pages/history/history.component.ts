@@ -43,6 +43,8 @@ import { NavBarComponent } from '../../components/nav-bar.component';
                 </div>
               }
             </div>
+          } @else if (errorMessage()) {
+            <div class="history-error" role="alert">{{ errorMessage() }}</div>
           } @else if (!rows.length) {
             <div class="empty">
               <mat-icon class="empty-icon">history</mat-icon>
@@ -139,6 +141,8 @@ import { NavBarComponent } from '../../components/nav-bar.component';
       font-family: var(--coop-font);
     }
 
+    .history-error { padding: 14px; border: 1px solid var(--coop-error-border); border-radius: var(--coop-radius); color: var(--coop-error); background: var(--coop-error-bg); font-size: 14px; }
+
     .empty-icon {
       font-size: 48px;
       width: 48px;
@@ -198,6 +202,7 @@ export class HistoryComponent implements OnInit {
   pageSize = 10;
   pageIndex = 0;
   loading = false;
+  errorMessage = '';
 
   private readonly accountService = inject(AccountService);
 
@@ -213,10 +218,18 @@ export class HistoryComponent implements OnInit {
 
   private loadPage(page: number, size: number): void {
     this.loading = true;
-    this.accountService.getTransactions(page, size).subscribe((result) => {
-      this.rows = result.content;
-      this.totalElements = result.totalElements;
-      this.loading = false;
+    this.errorMessage = '';
+    this.accountService.getTransactions(page, size).subscribe({
+      next: (result) => {
+        this.rows = result.content;
+        this.totalElements = result.totalElements;
+        this.loading = false;
+      },
+      error: (error: unknown) => {
+        const response = error as { error?: { message?: string }; message?: string };
+        this.errorMessage = response.error?.message || response.message || 'No se pudieron cargar los movimientos.';
+        this.loading = false;
+      },
     });
   }
 }

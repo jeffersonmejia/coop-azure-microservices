@@ -1,10 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { FooterComponent } from '../../components/footer.component';
@@ -14,6 +15,7 @@ import { FooterComponent } from '../../components/footer.component';
   imports: [
     FormsModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
@@ -84,6 +86,7 @@ import { FooterComponent } from '../../components/footer.component';
             @if (errorMessage()) {
               <div class="field-error" role="alert">{{ errorMessage() }}</div>
             }
+            <mat-checkbox name="rememberMe" [(ngModel)]="rememberMe">Recordarme</mat-checkbox>
             <button
               mat-flat-button
               color="primary"
@@ -112,15 +115,21 @@ import { FooterComponent } from '../../components/footer.component';
     </div>
   `,
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   email = '';
   password = '';
+  rememberMe = false;
   hidePassword = signal(true);
   loading = signal(false);
   errorMessage = signal('');
 
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    this.email = this.auth.getRememberedEmail();
+    this.rememberMe = this.email.length > 0;
+  }
 
   onSubmit(form: NgForm): void {
     if (form.invalid) {
@@ -129,7 +138,7 @@ export class LoginComponent {
     }
     this.errorMessage.set('');
     this.loading.set(true);
-    this.auth.login(this.email, this.password).subscribe({
+    this.auth.login(this.email, this.password, this.rememberMe).subscribe({
       next: () => {
         this.loading.set(false);
         this.router.navigate(['/dashboard']);

@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -39,6 +39,10 @@ import { NavBarComponent } from '../../components/nav-bar.component';
         <img src="vector/payments.svg" alt="Ilustración de pagos digitales" class="welcome-illustration" width="160" height="120" />
       </div>
 
+      @if (profileErrorMessage()) {
+        <div class="dashboard-feedback" role="alert">{{ profileErrorMessage() }}</div>
+      }
+
       <div class="dashboard-grid">
       @if (loadingAccounts) {
         <div class="account-skeleton" aria-label="Cargando cuenta">
@@ -59,6 +63,8 @@ import { NavBarComponent } from '../../components/nav-bar.component';
             </div>
           </mat-card-content>
         </mat-card>
+      } @else {
+        <div class="account-feedback" role="alert">{{ accountErrorMessage() || 'No se encontró una cuenta disponible.' }}</div>
       }
 
       <mat-card class="pay-card">
@@ -150,6 +156,9 @@ import { NavBarComponent } from '../../components/nav-bar.component';
       margin-left: 24px;
     }
     .dashboard-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(360px, 1.1fr); gap: 24px; align-items: start; }
+    .dashboard-feedback, .account-feedback { padding: 12px 14px; border: 1px solid var(--coop-error-border); border-radius: var(--coop-radius); color: var(--coop-error); background: var(--coop-error-bg); font-size: 14px; line-height: 1.4; }
+    .dashboard-feedback { margin: -12px 0 20px; }
+    .account-feedback { min-height: 197px; box-sizing: border-box; }
 
     .account-skeleton { min-height: 197px; padding: 24px; border: 1px solid var(--coop-border); border-radius: var(--coop-radius-lg); background: #fff; }
     .account-skeleton .skeleton + .skeleton { margin-top: 14px; }
@@ -241,6 +250,8 @@ export class DashboardComponent implements OnInit {
   accounts: AccountResponse[] = [];
   account: AccountResponse | null = null;
   loadingAccounts = true;
+  readonly profileErrorMessage = signal('');
+  readonly accountErrorMessage = signal('');
   paymentAccount = '';
   paymentAmount: number | null = null;
   paymentDescription = '';
@@ -252,19 +263,30 @@ export class DashboardComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
 
   ngOnInit(): void {
-    this.auth.me().subscribe((user) => (this.user = user));
+    this.auth.me().subscribe({
+      next: (user) => (this.user = user),
+      error: (error) => this.profileErrorMessage.set(this.getErrorMessage(error, 'No se pudo cargar tu perfil.')),
+    });
     this.loadAccounts();
   }
 
   loadAccounts(): void {
     this.loadingAccounts = true;
-    this.accountService.getMyAccounts().subscribe((accounts) => {
-      this.accounts = accounts;
-      this.account = accounts[0] ?? null;
-      if (this.account) {
-        this.paymentAccount = this.account.accountNumber;
-      }
-      this.loadingAccounts = false;
+    this.accountErrorMessage.set('');
+    this.accountService.getMyAccounts().subscribe({
+      next: (accounts) => {
+        this.accounts = accounts;
+        this.account = accounts[0] ?? null;
+        if (this.account) {
+          this.paymentAccount = this.account.accountNumber;
+        }
+        this.loadingAccounts = false;
+      },
+      error: (error) => {
+        this.account = null;
+        this.accountErrorMessage.set(this.getErrorMessage(error, 'No se pudo cargar tu cuenta.'));
+        this.loadingAccounts = false;
+      },
     });
   }
 
@@ -288,10 +310,18 @@ export class DashboardComponent implements OnInit {
             this.snackBar.open('El pago fue rechazado', 'Cerrar', { duration: 4000 });
           }
         },
-        error: () => {
+        error: (error) => {
           this.paying = false;
-          this.snackBar.open('No se pudo realizar el pago', 'Cerrar', { duration: 4000 });
+          this.snackBar.open(this.getErrorMessage(error, 'No se pudo realizar el pago.'), 'Cerrar', { duration: 4000 });
         },
       });
+  }
+
+  private getErrorMessage(error: unknown, fallback: string): string {
+    if (typeof error === 'object' && error !== null) {
+      const response = error as { error?: { message?: string }; message?: string };
+      return response.error?.message || response.message || fallback;
+    }
+    return fallback;
   }
 }

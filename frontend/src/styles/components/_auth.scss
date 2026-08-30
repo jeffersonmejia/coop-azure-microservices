@@ -156,6 +156,13 @@
   font-size: 15px;
 }
 
+.auth-form mat-checkbox {
+  display: block;
+  margin: 4px 0 2px;
+  color: var(--coop-text-secondary);
+  font-size: 14px;
+}
+
 .auth-form .mat-mdc-form-field {
   margin-bottom: 10px;
 }
