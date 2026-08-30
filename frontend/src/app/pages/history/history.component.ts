@@ -43,8 +43,8 @@ import { NavBarComponent } from '../../components/nav-bar.component';
                 </div>
               }
             </div>
-          } @else if (errorMessage()) {
-            <div class="history-error" role="alert">{{ errorMessage() }}</div>
+          } @else if (errorMessage) {
+            <div class="history-error" role="alert">{{ errorMessage }}</div>
           } @else if (!rows.length) {
             <div class="empty">
               <mat-icon class="empty-icon">history</mat-icon>
