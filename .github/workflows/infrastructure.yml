@@ -1,4 +1,4 @@
-name: Infrastructure
+name: Infra - Terraform
 
 on:
   pull_request:

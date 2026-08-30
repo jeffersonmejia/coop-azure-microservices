@@ -1,4 +1,4 @@
-name: Payment Service
+name: Service - Payment
 
 on:
   push:
