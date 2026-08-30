@@ -31,7 +31,7 @@ const PAYMENT_SERVICE_URL = process.env['PAYMENT_SERVICE_URL'] || 'http://localh
 
 function proxyTo(target: string) {
   return (req: ExpressRequest, res: ExpressResponse) => {
-    const url = new URL(target + req.url);
+    const url = new URL(target + req.originalUrl);
     const transport = url.protocol === 'https:' ? https : http;
     const proxyReq = transport.request(
       url,
@@ -51,7 +51,9 @@ function proxyTo(target: string) {
   };
 }
 
-const angularApp = new AngularNodeAppEngine();
+const angularApp = new AngularNodeAppEngine({
+  trustProxyHeaders: ['x-forwarded-for', 'x-forwarded-path'],
+});
 
 app.use('/api/auth', proxyTo(AUTH_SERVICE_URL));
 app.use('/api/accounts', proxyTo(ACCOUNT_SERVICE_URL));
