@@ -168,8 +168,9 @@
 }
 
 .btn-content { display: inline-flex; align-items: center; gap: 8px; line-height: 1; }
+.loading-content { display: inline-flex; align-items: center; gap: 8px; line-height: 1; }
 .btn-content mat-icon { width: 20px; height: 20px; margin: 0; font-size: 20px; vertical-align: middle; }
-.btn-spinner { display: inline-block; }
+.btn-spinner { display: block; flex: 0 0 auto; }
 
 .switch-text {
   margin: 18px 0 0;

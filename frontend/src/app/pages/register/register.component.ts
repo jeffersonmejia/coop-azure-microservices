@@ -26,7 +26,6 @@ import { FooterComponent } from '../../components/footer.component';
     <div class="auth-container register-page">
       <div class="auth-left">
         <div class="auth-story">
-          <span class="story-kicker"><mat-icon>diversity_3</mat-icon> Una cooperativa de sus socios</span>
           <h2>Tu participación<br />construye comunidad.</h2>
           <p>Al abrir una cuenta y cumplir los requisitos de afiliación, puedes formar parte de la cooperativa y acceder a servicios financieros pensados para sus miembros.</p>
           <img src="vector/auth.svg" alt="Nuevo socio uniéndose a Cooperativa Ecuador" class="auth-illustration" width="400" height="300" />
@@ -109,8 +108,10 @@ import { FooterComponent } from '../../components/footer.component';
               [disabled]="loading()"
             >
               @if (loading()) {
-                <mat-spinner [diameter]="20" class="btn-spinner"></mat-spinner>
-                <span>Registrando...</span>
+                <span class="loading-content">
+                  <mat-spinner [diameter]="20" class="btn-spinner"></mat-spinner>
+                  <span>Registrando...</span>
+                </span>
               } @else {
                 <span class="btn-content">
                   <mat-icon>person_add</mat-icon>

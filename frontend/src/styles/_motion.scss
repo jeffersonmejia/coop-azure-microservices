@@ -13,6 +13,11 @@
   50% { background-color: #e1e7e3; }
 }
 
+@keyframes gentle-reveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .page,
 .auth-container:not(.register-page) { animation: fade-in-up 420ms var(--coop-ease) both; }
 
@@ -21,6 +26,9 @@
 .welcome-illustration,
 .transfer-illustration,
 .auth-illustration { animation: soft-float 6s ease-in-out infinite; }
+
+.dashboard-view,
+.history-content { animation: gentle-reveal 460ms var(--coop-ease) both; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

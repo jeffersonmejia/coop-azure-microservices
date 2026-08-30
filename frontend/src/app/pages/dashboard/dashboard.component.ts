@@ -32,7 +32,6 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     <div class="page">
       <div class="welcome-section">
         <div class="welcome-text">
-          <span class="eyebrow">Tu espacio como socio</span>
           <h1 class="page-header">Hola, {{ user?.firstName || 'bienvenido' }}</h1>
           <p class="welcome-sub">Servicios pensados para ti y nuestra comunidad.</p>
         </div>
@@ -43,36 +42,48 @@ import { NavBarComponent } from '../../components/nav-bar.component';
         <div class="dashboard-feedback" role="alert">{{ profileErrorMessage() }}</div>
       }
 
-      <div class="dashboard-grid">
-      @if (loadingAccounts) {
-        <div class="account-skeleton" aria-label="Cargando cuenta">
-          <span class="skeleton skeleton-short"></span>
-          <span class="skeleton skeleton-medium"></span>
-          <span class="skeleton skeleton-balance"></span>
+      <section class="dashboard-shell">
+        <div class="dashboard-toggle" role="tablist" aria-label="Opciones del dashboard">
+          <button mat-button type="button" role="tab" [class.active]="activePanel() === 'account'" [attr.aria-selected]="activePanel() === 'account'" (click)="activePanel.set('account')">
+            Mi cuenta
+          </button>
+          <button mat-button type="button" role="tab" [class.active]="activePanel() === 'payment'" [attr.aria-selected]="activePanel() === 'payment'" (click)="activePanel.set('payment')">
+            Gestionar pago
+          </button>
         </div>
-      } @else if (account) {
-        <mat-card class="account-card">
-          <mat-card-header>
-            <mat-card-title class="account-number">{{ account.accountNumber }}</mat-card-title>
-            <mat-card-subtitle>Cuenta {{ account.status }}</mat-card-subtitle>
-          </mat-card-header>
-          <mat-card-content>
-            <div class="balance"><mat-icon>account_balance_wallet</mat-icon> Saldo disponible</div>
-            <div class="balance-value">
-              {{ account.balance | currency: 'USD' : 'symbol' : '1.2-2' }}
-            </div>
-          </mat-card-content>
-        </mat-card>
-      } @else {
-        <div class="account-feedback" role="alert">{{ accountErrorMessage() || 'No se encontró una cuenta disponible.' }}</div>
-      }
 
-      <mat-card class="pay-card">
-        <mat-card-header>
-          <mat-card-title>Gestionar pago</mat-card-title>
-          <mat-card-subtitle>Organiza tus pagos de manera simple</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
+        @if (activePanel() === 'account') {
+          <div class="dashboard-view">
+            @if (loadingAccounts) {
+              <div class="account-skeleton" aria-label="Cargando cuenta">
+                <p class="loading-copy">Cargando tu cuenta...</p>
+                <span class="skeleton skeleton-short"></span>
+                <span class="skeleton skeleton-medium"></span>
+                <span class="skeleton skeleton-balance"></span>
+              </div>
+            } @else if (account) {
+              <mat-card class="account-card">
+                <mat-card-header>
+                  <mat-card-title class="account-number">{{ account.accountNumber }}</mat-card-title>
+                  <mat-card-subtitle>Cuenta {{ getAccountStatusLabel(account.status) }}</mat-card-subtitle>
+                </mat-card-header>
+                <mat-card-content>
+                  <div class="balance"><mat-icon>account_balance_wallet</mat-icon> Saldo disponible</div>
+                  <div class="balance-value">
+                    {{ account.balance | currency: 'USD' : 'symbol' : '1.2-2' }}
+                  </div>
+                </mat-card-content>
+              </mat-card>
+            } @else {
+              <div class="account-feedback" role="alert">{{ accountErrorMessage() || 'No se encontró una cuenta disponible.' }}</div>
+            }
+          </div>
+        } @else {
+          <div class="dashboard-view payment-view">
+            <div class="payment-heading">
+              <h2>Gestionar pago</h2>
+              <p>Organiza tus pagos de manera simple.</p>
+            </div>
           <form #paymentForm="ngForm" (ngSubmit)="pay(paymentForm)" novalidate>
             <mat-form-field appearance="outline">
               <mat-label>Cuenta destino</mat-label>
@@ -111,8 +122,10 @@ import { NavBarComponent } from '../../components/nav-bar.component';
               class="submit-btn"
             >
               @if (paying) {
-                <mat-spinner [diameter]="20" class="btn-spinner"></mat-spinner>
-                <span>Procesando...</span>
+                <span class="loading-content">
+                  <mat-spinner [diameter]="20" class="btn-spinner"></mat-spinner>
+                  <span>Procesando...</span>
+                </span>
               } @else {
                 <span class="btn-content">
                   <mat-icon>payment</mat-icon>
@@ -121,9 +134,9 @@ import { NavBarComponent } from '../../components/nav-bar.component';
               }
             </button>
           </form>
-        </mat-card-content>
-      </mat-card>
-      </div>
+          </div>
+        }
+      </section>
     </div>
   `,
   styles: `
@@ -148,19 +161,22 @@ import { NavBarComponent } from '../../components/nav-bar.component';
       margin-top: 4px;
       font-family: var(--coop-font);
     }
-    .eyebrow { display: block; margin-bottom: 8px; color: var(--coop-accent); font-size: 13px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; }
-
     .welcome-illustration {
       width: 160px;
       height: auto;
       margin-left: 24px;
     }
-    .dashboard-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(360px, 1.1fr); gap: 24px; align-items: start; }
+    .dashboard-shell { overflow: hidden; border: 1px solid var(--coop-border-light); border-radius: var(--coop-radius-lg); background: #fff; }
+    .dashboard-toggle { display: flex; gap: 6px; padding: 10px; border-bottom: 1px solid var(--coop-border-light); background: var(--coop-surface-variant); }
+    .dashboard-toggle button { min-height: 40px; padding: 0 18px; border-radius: 10px; color: var(--coop-text-secondary); font-weight: 560; }
+    .dashboard-toggle button.active { color: var(--coop-green-900); background: #fff; box-shadow: 0 1px 3px rgb(20 56 31 / 10%); }
+    .dashboard-view { min-height: 276px; padding: 28px; }
     .dashboard-feedback, .account-feedback { padding: 12px 14px; border: 1px solid var(--coop-error-border); border-radius: var(--coop-radius); color: var(--coop-error); background: var(--coop-error-bg); font-size: 14px; line-height: 1.4; }
     .dashboard-feedback { margin: -12px 0 20px; }
     .account-feedback { min-height: 197px; box-sizing: border-box; }
 
-    .account-skeleton { min-height: 197px; padding: 24px; border: 1px solid var(--coop-border); border-radius: var(--coop-radius-lg); background: #fff; }
+    .account-skeleton { min-height: 197px; padding: 24px; border: 1px solid var(--coop-border); border-radius: var(--coop-radius); background: var(--coop-surface-variant); }
+    .loading-copy { margin: 0 0 16px; color: var(--coop-text-secondary); font-size: 14px; }
     .account-skeleton .skeleton + .skeleton { margin-top: 14px; }
     .skeleton-short { width: 38%; height: 15px; }
     .skeleton-medium { width: 60%; height: 12px; }
@@ -203,9 +219,10 @@ import { NavBarComponent } from '../../components/nav-bar.component';
       font-family: var(--coop-font);
     }
 
-    .pay-card {
-      min-height: 245px;
-    }
+    .payment-view { max-width: 520px; }
+    .payment-heading { margin-bottom: 20px; }
+    .payment-heading h2 { margin: 0; color: var(--coop-text-primary); font-size: 22px; font-weight: 560; }
+    .payment-heading p { margin: 6px 0 0; color: var(--coop-text-secondary); font-size: 14px; }
 
     .submit-btn {
       display: flex;
@@ -225,6 +242,8 @@ import { NavBarComponent } from '../../components/nav-bar.component';
       line-height: 1;
     }
 
+    .loading-content { display: inline-flex; align-items: center; gap: 8px; line-height: 1; }
+
     .btn-content mat-icon {
       font-size: 20px;
       width: 20px;
@@ -233,15 +252,14 @@ import { NavBarComponent } from '../../components/nav-bar.component';
       vertical-align: middle;
     }
 
-    .btn-spinner {
-      display: inline-block;
-    }
+    .btn-spinner { display: block; flex: 0 0 auto; }
     @media (max-width: 760px) {
-      .dashboard-grid { grid-template-columns: 1fr; }
       .welcome-illustration { width: 120px; }
+      .dashboard-view { padding: 20px; }
     }
     @media (max-width: 460px) {
       .welcome-illustration { display: none; }
+      .dashboard-toggle button { flex: 1; padding: 0 10px; }
     }
   `,
 })
@@ -252,6 +270,7 @@ export class DashboardComponent implements OnInit {
   loadingAccounts = true;
   readonly profileErrorMessage = signal('');
   readonly accountErrorMessage = signal('');
+  readonly activePanel = signal<'account' | 'payment'>('account');
   paymentAccount = '';
   paymentAmount: number | null = null;
   paymentDescription = '';
@@ -323,5 +342,15 @@ export class DashboardComponent implements OnInit {
       return response.error?.message || response.message || fallback;
     }
     return fallback;
+  }
+
+  getAccountStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      ACTIVE: 'activa',
+      INACTIVE: 'inactiva',
+      BLOCKED: 'bloqueada',
+      CLOSED: 'cerrada',
+    };
+    return labels[status] ?? status;
   }
 }

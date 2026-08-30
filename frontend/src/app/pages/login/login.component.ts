@@ -27,7 +27,6 @@ import { FooterComponent } from '../../components/footer.component';
     <div class="auth-container">
       <div class="auth-left">
         <div class="auth-story">
-          <span class="story-kicker"><mat-icon>diversity_3</mat-icon> Cooperativa de ahorro y crédito</span>
           <h2>De nuestros socios,<br />para nuestros socios.</h2>
           <p>Somos una organización propiedad de sus socios. Brindamos servicios financieros para apoyar el bienestar y crecimiento de nuestros miembros.</p>
           <img src="vector/auth.svg" alt="Socio gestionando su cuenta cooperativa" class="auth-illustration" width="400" height="300" />
@@ -49,7 +48,7 @@ import { FooterComponent } from '../../components/footer.component';
                 [(ngModel)]="email"
                 required
                 email
-                autocomplete="email"
+                autocomplete="username"
               />
               <mat-icon matPrefix>email</mat-icon>
               @if (emailField.hasError('required')) {
@@ -95,8 +94,10 @@ import { FooterComponent } from '../../components/footer.component';
               [disabled]="loading()"
             >
               @if (loading()) {
-                <mat-spinner [diameter]="20" class="btn-spinner"></mat-spinner>
-                <span>Ingresando...</span>
+                <span class="loading-content">
+                  <mat-spinner [diameter]="20" class="btn-spinner"></mat-spinner>
+                  <span>Ingresando...</span>
+                </span>
               } @else {
                 <span class="btn-content">
                   <mat-icon>login</mat-icon>

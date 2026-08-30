@@ -24,7 +24,6 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     <div class="page">
       <div class="history-heading">
         <div>
-          <span class="eyebrow">Actividad de tu cuenta</span>
           <h1 class="page-header">Movimientos</h1>
           <p>Revisa tus pagos y transferencias recientes.</p>
         </div>
@@ -34,6 +33,7 @@ import { NavBarComponent } from '../../components/nav-bar.component';
         <mat-card-content>
           @if (loading) {
             <div class="table-skeleton" aria-label="Cargando movimientos">
+              <p class="loading-copy">Cargando movimientos...</p>
               @for (item of skeletonRows; track item) {
                 <div class="skeleton-row">
                   <span class="skeleton skeleton-date"></span>
@@ -51,7 +51,7 @@ import { NavBarComponent } from '../../components/nav-bar.component';
               <span>Sin operaciones registradas</span>
             </div>
           } @else {
-            <div class="table-wrap">
+            <div class="table-wrap history-content">
               <table mat-table [dataSource]="rows">
                 <ng-container matColumnDef="occurredAt">
                   <th mat-header-cell *matHeaderCellDef>Fecha</th>
@@ -62,7 +62,7 @@ import { NavBarComponent } from '../../components/nav-bar.component';
                 <ng-container matColumnDef="type">
                   <th mat-header-cell *matHeaderCellDef>Tipo</th>
                   <td mat-cell *matCellDef="let row">
-                    <span class="type-badge">{{ row.type }}</span>
+                    <span class="type-badge">{{ getTransactionTypeLabel(row.type) }}</span>
                   </td>
                 </ng-container>
                 <ng-container matColumnDef="amount">
@@ -87,7 +87,7 @@ import { NavBarComponent } from '../../components/nav-bar.component';
                   <th mat-header-cell *matHeaderCellDef>Estado</th>
                   <td mat-cell *matCellDef="let row">
                     <span [class]="'status-badge status-' + row.status.toLowerCase()">
-                      {{ row.status }}
+                      {{ getStatusLabel(row.status) }}
                     </span>
                   </td>
                 </ng-container>
@@ -119,6 +119,7 @@ import { NavBarComponent } from '../../components/nav-bar.component';
       overflow-x: auto;
     }
     .table-skeleton { padding: 4px 0; }
+    .loading-copy { margin: 0 0 14px; color: var(--coop-text-secondary); font-size: 14px; }
     .skeleton-row { display: grid; grid-template-columns: 1.3fr .8fr 1fr .7fr; gap: 24px; align-items: center; min-height: 58px; padding: 0 8px; border-bottom: 1px solid var(--coop-border-light); }
     .skeleton-row .skeleton { height: 13px; }
     .skeleton-date { width: 80%; }
@@ -127,7 +128,6 @@ import { NavBarComponent } from '../../components/nav-bar.component';
     .skeleton-status { width: 82%; height: 24px !important; border-radius: 999px; }
     .history-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
     .history-heading p { margin: 6px 0 0; color: var(--coop-text-secondary); }
-    .eyebrow { display: block; margin-bottom: 8px; color: var(--coop-accent); font-size: 13px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; }
     .history-icon { display: grid; width: 54px; height: 54px; place-items: center; border-radius: 18px; color: var(--coop-accent); background: var(--coop-green-100); }
     .history-icon mat-icon { width: 26px; height: 26px; font-size: 26px; }
 
@@ -231,5 +231,26 @@ export class HistoryComponent implements OnInit {
         this.loading = false;
       },
     });
+  }
+
+  getTransactionTypeLabel(type: string): string {
+    const labels: Record<string, string> = {
+      DEPOSIT: 'Depósito',
+      WITHDRAWAL: 'Retiro',
+      TRANSFER_IN: 'Transferencia recibida',
+      TRANSFER_OUT: 'Transferencia enviada',
+      PAYMENT: 'Pago',
+      OTHER: 'Otro',
+    };
+    return labels[type] ?? type;
+  }
+
+  getStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      COMPLETED: 'Completado',
+      PENDING: 'Pendiente',
+      FAILED: 'Fallido',
+    };
+    return labels[status] ?? status;
   }
 }
