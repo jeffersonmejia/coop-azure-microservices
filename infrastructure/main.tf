@@ -181,6 +181,7 @@ module "frontend_container_app" {
   max_replicas                 = 2
   environment_variables = {
     NG_ALLOWED_HOSTS = "ca-${var.project_name}-${var.environment_name}-frontend.calmocean-039ebd3e.${var.apps_location}.azurecontainerapps.io"
+    AUTH_SERVICE_URL = "https://${module.auth_container_app.fqdn}"
   }
 }
 

@@ -119,10 +119,15 @@ jobs:
             --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
             --query "properties.configuration.ingress.fqdn" \
             -o tsv 2>/dev/null || echo "")
+          AUTH_FQDN=$(az containerapp show \
+            --name "ca-coop-dev-auth" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --query "properties.configuration.ingress.fqdn" \
+            -o tsv)
 
-          EXTRA_ENV_ARGS=()
+          EXTRA_ENV_ARGS=(--set-env-vars "AUTH_SERVICE_URL=https://$AUTH_FQDN")
           if [ -n "$FRONTEND_FQDN" ]; then
-            EXTRA_ENV_ARGS+=(--set-env-vars "NG_ALLOWED_HOSTS=$FRONTEND_FQDN")
+            EXTRA_ENV_ARGS+=("NG_ALLOWED_HOSTS=$FRONTEND_FQDN")
           fi
 
           if az containerapp show --name "ca-coop-dev-frontend" --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" &>/dev/null; then
@@ -150,7 +155,9 @@ jobs:
               --registry-server "${{ env.AZURE_ACR_NAME }}.azurecr.io" \
               --registry-identity "$IDENTITY_ID" \
               --user-assigned "$IDENTITY_ID" \
-              --env-vars "NG_ALLOWED_HOSTS=${FRONTEND_FQDN}"
+              --env-vars \
+                "NG_ALLOWED_HOSTS=${FRONTEND_FQDN}" \
+                "AUTH_SERVICE_URL=https://${AUTH_FQDN}"
           fi
 
       - name: Health check

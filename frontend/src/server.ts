@@ -14,7 +14,18 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 
-const AUTH_SERVICE_URL = process.env['AUTH_SERVICE_URL'] || 'http://localhost:8081';
+function serviceUrl(name: string, localFallback: string): string {
+  const configuredUrl = process.env[name];
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+  if (process.env['NODE_ENV'] === 'production') {
+    throw new Error(`${name} must be configured in production`);
+  }
+  return localFallback;
+}
+
+const AUTH_SERVICE_URL = serviceUrl('AUTH_SERVICE_URL', 'http://localhost:8081');
 const ACCOUNT_SERVICE_URL = process.env['ACCOUNT_SERVICE_URL'] || 'http://localhost:8082';
 const PAYMENT_SERVICE_URL = process.env['PAYMENT_SERVICE_URL'] || 'http://localhost:8083';
 
