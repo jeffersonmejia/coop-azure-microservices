@@ -104,6 +104,17 @@
   transform: translateY(0) scale(.99);
 }
 
+.success-snackbar .mat-mdc-snackbar-surface {
+  border: 1px solid #b8d8c0;
+  border-radius: var(--coop-radius);
+  color: var(--coop-green-900);
+  background: var(--coop-green-100);
+}
+
+.success-snackbar .mat-mdc-button {
+  color: var(--coop-green-800) !important;
+}
+
 @media (max-width: 680px) {
   .mat-mdc-card-content { padding: 20px !important; }
 }

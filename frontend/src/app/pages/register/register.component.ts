@@ -5,6 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { FooterComponent } from '../../components/footer.component';
@@ -139,6 +140,7 @@ export class RegisterComponent {
 
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly snackBar = inject(MatSnackBar);
 
   onSubmit(form: NgForm): void {
     if (form.invalid) {
@@ -150,6 +152,12 @@ export class RegisterComponent {
     this.auth.register(this.firstName, this.lastName, this.email, this.password).subscribe({
       next: () => {
         this.loading.set(false);
+        this.snackBar.open('Registro exitoso', 'Cerrar', {
+          duration: 4000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          panelClass: 'success-snackbar',
+        });
         this.router.navigate(['/login']);
       },
       error: (err) => {

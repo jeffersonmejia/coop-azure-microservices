@@ -14,7 +14,9 @@
 }
 
 .page,
-.auth-container { animation: fade-in-up 420ms var(--coop-ease) both; }
+.auth-container:not(.register-page) { animation: fade-in-up 420ms var(--coop-ease) both; }
+
+.register-page .auth-form { animation: fade-in-up 420ms var(--coop-ease) both; }
 
 .welcome-illustration,
 .transfer-illustration,

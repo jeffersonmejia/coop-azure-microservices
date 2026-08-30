@@ -135,8 +135,16 @@
 .error-banner mat-icon { width: 20px; height: 20px; flex-shrink: 0; font-size: 20px; }
 
 .field-error {
-  margin: -4px 12px 8px;
+  display: flex;
+  align-items: flex-start;
+  min-height: 18px;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  margin: 2px 0 8px;
+  border: 1px solid var(--coop-error-border);
+  border-radius: 10px;
   color: var(--coop-error);
+  background: var(--coop-error-bg);
   font-size: 12px;
   line-height: 1.35;
 }
