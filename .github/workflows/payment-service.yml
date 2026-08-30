@@ -1,6 +1,12 @@
 name: Service - Payment
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/payment-service/**'
+      - '.github/workflows/payment-service.yml'
+      - '.github/workflows/_backend-service.yml'
   workflow_dispatch:
     inputs:
       deploy_to:

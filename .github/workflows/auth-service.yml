@@ -1,6 +1,12 @@
 name: Service - Auth
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/auth-service/**'
+      - '.github/workflows/auth-service.yml'
+      - '.github/workflows/_backend-service.yml'
   workflow_dispatch:
     inputs:
       deploy_to:

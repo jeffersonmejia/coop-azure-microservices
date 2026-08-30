@@ -1,7 +1,11 @@
 name: Web - Frontend
 
 on:
-  workflow_call:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
   workflow_dispatch:
 
 permissions:
